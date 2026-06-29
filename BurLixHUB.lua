@@ -73,6 +73,7 @@ local character = nil
 local highlightEnabled = false
 local bordersEnabled = false
 local namesEnabled = false
+local boxesEnabled = false
 
 -- Connections list to disconnect on unload to prevent leaks
 local connections = {}
@@ -117,7 +118,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.4.0"
+titleText.Text = "BurLix HUB v1.4.1"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.Font = Enum.Font.SourceSansBold
@@ -417,7 +418,7 @@ end
 local playerTab = createTab("Player", 1, 200)
 local worldTab = createTab("World", 2, 200)
 local authorsTab = createTab("Authors", 3, 520)
-local visualsTab = createTab("Visuals", 4, 200)
+local visualsTab = createTab("Visuals", 4, 250)
 
 -- DEFAULT TAB SETTINGS
 showTab("Player")
@@ -486,6 +487,23 @@ local function updateCharacterVisuals(targetPlayer, char)
     else
         if highlight then
             highlight:Destroy()
+        end
+    end
+    
+    -- SelectionBox (Boxes) handling
+    local box = char:FindFirstChild("BurLixBox")
+    if boxesEnabled then
+        if not box then
+            box = Instance.new("SelectionBox")
+            box.Name = "BurLixBox"
+            box.Color3 = Color3.fromRGB(80, 80, 250)
+            box.LineThickness = 0.05
+            box.Adornee = char
+            box.Parent = char
+        end
+    else
+        if box then
+            box:Destroy()
         end
     end
     
@@ -604,7 +622,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.4.0\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.4.1\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.SourceSansBold
@@ -633,7 +651,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.4.0:\n- Fixed Visuals tab features (Highlighting, Borders, Names) to work correctly for all players (including local player).\n- Optimized character load checking to prevent initialization delays.\n- Enabled TextWrapped across all Changelog and Info labels to prevent clipping.\n- Confirmed removal of Reset to Default buttons across all tabs.\n- Added memory leak cleanup that disconnects all listeners on unload."
+changelogLabel.Text = "Changelog v1.4.1:\n- Added 3D SelectionBox ESP (Show Boxes) to the Visuals tab.\n- Adjusted Visuals tab canvas height to support the new toggle.\n- Fixed all Visuals (Highlighting, Borders, Names) to work correctly for all players (including local player).\n- Added memory leak cleanup that disconnects all listeners on unload."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.SourceSans
@@ -686,6 +704,12 @@ end)
 -- Toggle for Show Names
 createToggle(visualsTab, "Show Names", false, 3, function(state)
     namesEnabled = state
+    refreshAllVisuals()
+end)
+
+-- Toggle for Show Boxes
+createToggle(visualsTab, "Show Boxes", false, 4, function(state)
+    boxesEnabled = state
     refreshAllVisuals()
 end)
 
@@ -783,6 +807,7 @@ local function unload()
     highlightEnabled = false
     bordersEnabled = false
     namesEnabled = false
+    boxesEnabled = false
     pcall(refreshAllVisuals)
     
     -- Disconnect all active connections
