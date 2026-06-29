@@ -24,6 +24,8 @@ end
 local currentWalkSpeed = humanoid.WalkSpeed
 local isJumpPower = humanoid.UseJumpPower
 local currentJumpValue = isJumpPower and humanoid.JumpPower or humanoid.JumpHeight
+local minJump = 0
+local maxJump = isJumpPower and 250 or 150
 
 -- Re-hook humanoid and re-apply settings on character respawn
 player.CharacterAdded:Connect(function(newCharacter)
@@ -430,7 +432,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.3.3\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.3.4\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.GothamSemibold
@@ -457,7 +459,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.3.3:\n- Added anti-double-run check to destroy old UI instances.\n- Fixed respawn settings re-application to new humanoid.\n- Replaced tick() with os.clock() in FPS calculation loop.\n- Added close button (X) to main menu title bar (v1.3.2).\n- Changed menu toggle keybind to P."
+changelogLabel.Text = "Changelog v1.3.4:\n- Fixed critical runtime crash by defining minJump/maxJump variables.\n- Restored top stats island, World/Authors tabs, and Close button.\n- Added anti-double-run check to destroy old UI instances (v1.3.3).\n- Fixed respawn settings re-application to new humanoid (v1.3.3).\n- Replaced tick() with os.clock() in FPS loop (v1.3.3)."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.Gotham
