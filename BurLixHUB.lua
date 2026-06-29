@@ -19,7 +19,7 @@ end)
 
 -- Create GUI Elements
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "BurLixPlaygroundGUI"
+screenGui.Name = "BurLixGUI"
 screenGui.ResetOnSpawn = false
 
 -- Use CoreGui if running in a plugin context, otherwise ScreenGui in PlayerGui
@@ -65,7 +65,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -50, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB - Playground"
+titleText.Text = "BurLix HUB"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.Font = Enum.Font.GothamBold
@@ -137,7 +137,7 @@ local function showTab(tabName)
     end
 end
 
-local function createTab(name, layoutOrder)
+local function createTab(name, layoutOrder, canvasHeight)
     -- Navigation Button
     local btn = Instance.new("TextButton")
     btn.Name = name .. "TabButton"
@@ -164,7 +164,7 @@ local function createTab(name, layoutOrder)
     frame.BorderSizePixel = 0
     frame.ScrollBarThickness = 4
     frame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 110)
-    frame.CanvasSize = UDim2.new(0, 0, 0, 400)
+    frame.CanvasSize = UDim2.new(0, 0, 0, canvasHeight or 400)
     frame.Visible = false
     frame.Parent = contentContainer
 
@@ -292,9 +292,9 @@ local function createSlider(tabFrame, name, minVal, maxVal, defaultVal, layoutOr
 end
 
 -- Create Tabs
-local playerTab = createTab("Player", 1)
-local worldTab = createTab("World", 2)
-local authorsTab = createTab("Authors", 3)
+local playerTab = createTab("Player", 1, 350)
+local worldTab = createTab("World", 2, 350)
+local authorsTab = createTab("Authors", 3, 500) -- Larger canvas height for changelog details
 
 -- DEFAULT TAB SETTINGS
 showTab("Player")
@@ -389,23 +389,40 @@ end)
 
 -- ==================== AUTHORS TAB CONTENTS ====================
 
-local creatorsCard = createRow(authorsTab, "CreatorsCard", 120, 1)
+-- Creators Info (Updated name to Gemini and added version)
+local creatorsCard = createRow(authorsTab, "CreatorsCard", 110, 1)
 
 local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 1, -10)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB Creators:\n\n- Vench1k\n- Gemini0\n\nThank you for using this playground."
+creatorsLabel.Text = "BurLix HUB v1.2.0\n\nCreators:\n- Vench1k\n- Gemini\n\nThank you for using BurLix HUB."
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
-creatorsLabel.TextSize = 14
+creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.GothamSemibold
 creatorsLabel.TextXAlignment = Enum.TextXAlignment.Left
 creatorsLabel.TextYAlignment = Enum.TextYAlignment.Top
 creatorsLabel.LineHeight = 1.3
 creatorsLabel.Parent = creatorsCard
 
--- User Info Card in Authors tab
-local infoRow = createRow(authorsTab, "InfoRow", 100, 2)
+-- Changelog Card
+local changelogCard = createRow(authorsTab, "ChangelogCard", 150, 2)
+
+local changelogLabel = Instance.new("TextLabel")
+changelogLabel.Size = UDim2.new(1, -20, 1, -10)
+changelogLabel.Position = UDim2.new(0, 10, 0, 5)
+changelogLabel.BackgroundTransparency = 1
+changelogLabel.Text = "Changelog v1.2.0:\n- Added Player, World, and Authors tabs.\n- Added World gravity configuration slider.\n- Replaced WalkSpeed and Jump inputs with sliders.\n- Fixed Right Shift toggle by bypass processed check.\n- Removed all mentions of playground.\n- Added versioning and Changelog cards."
+changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+changelogLabel.TextSize = 12
+changelogLabel.Font = Enum.Font.Gotham
+changelogLabel.TextXAlignment = Enum.TextXAlignment.Left
+changelogLabel.TextYAlignment = Enum.TextYAlignment.Top
+changelogLabel.LineHeight = 1.3
+changelogLabel.Parent = changelogCard
+
+-- User Info Card
+local infoRow = createRow(authorsTab, "InfoRow", 100, 3)
 
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Size = UDim2.new(1, -20, 1, -10)
