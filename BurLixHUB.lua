@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -30,11 +31,11 @@ else
     screenGui.Parent = game:GetService("CoreGui")
 end
 
--- Main Frame
+-- Main Frame (Wider to accommodate left tab sidebar)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 350, 0, 420)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -210)
+mainFrame.Size = UDim2.new(0, 460, 0, 320)
+mainFrame.Position = UDim2.new(0.5, -230, 0.5, -160)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -87,32 +88,109 @@ local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 3)
 toggleCorner.Parent = toggleButton
 
--- Content Container (Scrolling Frame)
-local container = Instance.new("ScrollingFrame")
-container.Name = "Container"
-container.Size = UDim2.new(1, -20, 1, -65)
-container.Position = UDim2.new(0, 10, 0, 55)
-container.BackgroundTransparency = 1
-container.BorderSizePixel = 0
-container.ScrollBarThickness = 4
-container.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 110)
-container.CanvasSize = UDim2.new(0, 0, 0, 500)
-container.Parent = mainFrame
+-- Navigation Panel (Sidebar)
+local navPanel = Instance.new("Frame")
+navPanel.Name = "NavigationPanel"
+navPanel.Size = UDim2.new(0, 110, 1, -45)
+navPanel.Position = UDim2.new(0, 0, 0, 45)
+navPanel.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+navPanel.BorderSizePixel = 0
+navPanel.Parent = mainFrame
 
-local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 10)
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Parent = container
+local navCorner = Instance.new("UICorner")
+navCorner.CornerRadius = UDim.new(0, 4)
+navCorner.Parent = navPanel
 
--- Helper Function to Create Row Frames (Less rounded)
-local function createRow(name, height, layoutOrder)
+-- Left list layout for navigation buttons
+local navList = Instance.new("UIListLayout")
+navList.Padding = UDim.new(0, 8)
+navList.SortOrder = Enum.SortOrder.LayoutOrder
+navList.Parent = navPanel
+
+local navPadding = Instance.new("UIPadding")
+navPadding.PaddingTop = UDim.new(0, 10)
+navPadding.PaddingLeft = UDim.new(0, 8)
+navPadding.PaddingRight = UDim.new(0, 8)
+navPadding.Parent = navPanel
+
+-- Content Container Panel (Right side)
+local contentContainer = Instance.new("Frame")
+contentContainer.Name = "ContentContainer"
+contentContainer.Size = UDim2.new(1, -110, 1, -45)
+contentContainer.Position = UDim2.new(0, 110, 0, 45)
+contentContainer.BackgroundTransparency = 1
+contentContainer.BorderSizePixel = 0
+contentContainer.Parent = mainFrame
+
+-- Tab system logic
+local tabs = {}
+
+local function showTab(tabName)
+    for name, data in pairs(tabs) do
+        if name == tabName then
+            data.Button.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+            data.Frame.Visible = true
+        else
+            data.Button.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+            data.Frame.Visible = false
+        end
+    end
+end
+
+local function createTab(name, layoutOrder)
+    -- Navigation Button
+    local btn = Instance.new("TextButton")
+    btn.Name = name .. "TabButton"
+    btn.Size = UDim2.new(1, 0, 0, 32)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    btn.BorderSizePixel = 0
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(220, 220, 225)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamSemibold
+    btn.LayoutOrder = layoutOrder
+    btn.Parent = navPanel
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 3)
+    btnCorner.Parent = btn
+
+    -- Content Frame
+    local frame = Instance.new("ScrollingFrame")
+    frame.Name = name .. "TabFrame"
+    frame.Size = UDim2.new(1, -20, 1, -20)
+    frame.Position = UDim2.new(0, 10, 0, 10)
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.ScrollBarThickness = 4
+    frame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 110)
+    frame.CanvasSize = UDim2.new(0, 0, 0, 400)
+    frame.Visible = false
+    frame.Parent = contentContainer
+
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Padding = UDim.new(0, 10)
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Parent = frame
+
+    tabs[name] = {Button = btn, Frame = frame}
+
+    btn.MouseButton1Click:Connect(function()
+        showTab(name)
+    end)
+
+    return frame
+end
+
+-- Helper Function to Create Row Frames inside Tab Frames
+local function createRow(tabFrame, name, height, layoutOrder)
     local row = Instance.new("Frame")
     row.Name = name
     row.Size = UDim2.new(1, 0, 0, height)
     row.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     row.BorderSizePixel = 0
     row.LayoutOrder = layoutOrder
-    row.Parent = container
+    row.Parent = tabFrame
 
     local rowCorner = Instance.new("UICorner")
     rowCorner.CornerRadius = UDim.new(0, 3)
@@ -122,8 +200,8 @@ local function createRow(name, height, layoutOrder)
 end
 
 -- Helper Function to Create Sliders
-local function createSlider(name, minVal, maxVal, defaultVal, layoutOrder, onChange)
-    local row = createRow(name .. "Row", 70, layoutOrder)
+local function createSlider(tabFrame, name, minVal, maxVal, defaultVal, layoutOrder, onChange)
+    local row = createRow(tabFrame, name .. "Row", 70, layoutOrder)
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -20, 0, 25)
@@ -213,20 +291,30 @@ local function createSlider(name, minVal, maxVal, defaultVal, layoutOrder, onCha
     return row, updateSlider
 end
 
--- 1. WalkSpeed Slider
-local wsRow, updateWSSlider = createSlider("Walk Speed", 16, 200, humanoid.WalkSpeed, 1, function(val)
+-- Create Tabs
+local playerTab = createTab("Player", 1)
+local worldTab = createTab("World", 2)
+local authorsTab = createTab("Authors", 3)
+
+-- DEFAULT TAB SETTINGS
+showTab("Player")
+
+-- ==================== PLAYER TAB CONTENTS ====================
+
+-- WalkSpeed Slider
+local wsRow, updateWSSlider = createSlider(playerTab, "Walk Speed", 16, 200, humanoid.WalkSpeed, 1, function(val)
     if humanoid then
         humanoid.WalkSpeed = val
     end
 end)
 
--- 2. JumpPower Slider
+-- JumpPower Slider
 local isJumpPower = humanoid.UseJumpPower
 local minJump = isJumpPower and 0 or 0
 local maxJump = isJumpPower and 250 or 150
 local defaultJump = isJumpPower and humanoid.JumpPower or humanoid.JumpHeight
 
-local jpRow, updateJPSlider = createSlider("Jump Ability", minJump, maxJump, defaultJump, 2, function(val)
+local jpRow, updateJPSlider = createSlider(playerTab, "Jump Ability", minJump, maxJump, defaultJump, 2, function(val)
     if humanoid then
         if humanoid.UseJumpPower then
             humanoid.JumpPower = val
@@ -236,8 +324,8 @@ local jpRow, updateJPSlider = createSlider("Jump Ability", minJump, maxJump, def
     end
 end)
 
--- 3. Reset Button Section
-local resetRow = createRow("ResetRow", 50, 3)
+-- Reset Button
+local resetRow = createRow(playerTab, "ResetRow", 50, 3)
 
 local resetButton = Instance.new("TextButton")
 resetButton.Size = UDim2.new(1, -20, 1, -10)
@@ -268,8 +356,56 @@ resetButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- 4. User Info Card
-local infoRow = createRow("InfoRow", 100, 4)
+
+-- ==================== WORLD TAB CONTENTS ====================
+
+-- Gravity Slider
+local gravitySliderRow, updateGravitySlider = createSlider(worldTab, "Gravity", 0, 500, Workspace.Gravity, 1, function(val)
+    Workspace.Gravity = val
+end)
+
+-- Reset World button
+local resetWorldRow = createRow(worldTab, "ResetWorldRow", 50, 2)
+
+local resetWorldButton = Instance.new("TextButton")
+resetWorldButton.Size = UDim2.new(1, -20, 1, -10)
+resetWorldButton.Position = UDim2.new(0, 10, 0, 5)
+resetWorldButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+resetWorldButton.Text = "Reset World to Default"
+resetWorldButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+resetWorldButton.TextSize = 14
+resetWorldButton.Font = Enum.Font.GothamBold
+resetWorldButton.Parent = resetWorldRow
+
+local resetWorldBtnCorner = Instance.new("UICorner")
+resetWorldBtnCorner.CornerRadius = UDim.new(0, 3)
+resetWorldBtnCorner.Parent = resetWorldButton
+
+resetWorldButton.MouseButton1Click:Connect(function()
+    Workspace.Gravity = 196.2
+    updateGravitySlider((196.2 - 0) / (500 - 0))
+end)
+
+
+-- ==================== AUTHORS TAB CONTENTS ====================
+
+local creatorsCard = createRow(authorsTab, "CreatorsCard", 120, 1)
+
+local creatorsLabel = Instance.new("TextLabel")
+creatorsLabel.Size = UDim2.new(1, -20, 1, -10)
+creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
+creatorsLabel.BackgroundTransparency = 1
+creatorsLabel.Text = "BurLix HUB Creators:\n\n- Vench1k\n- Gemini0\n\nThank you for using this playground."
+creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
+creatorsLabel.TextSize = 14
+creatorsLabel.Font = Enum.Font.GothamSemibold
+creatorsLabel.TextXAlignment = Enum.TextXAlignment.Left
+creatorsLabel.TextYAlignment = Enum.TextYAlignment.Top
+creatorsLabel.LineHeight = 1.3
+creatorsLabel.Parent = creatorsCard
+
+-- User Info Card in Authors tab
+local infoRow = createRow(authorsTab, "InfoRow", 100, 2)
 
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Size = UDim2.new(1, -20, 1, -10)
@@ -284,6 +420,9 @@ infoLabel.TextYAlignment = Enum.TextYAlignment.Top
 infoLabel.LineHeight = 1.3
 infoLabel.Parent = infoRow
 
+
+-- ==================== INTERACTION LOGIC ====================
+
 -- Minimize Toggle Logic
 local isMinimized = false
 local originalSize = mainFrame.Size
@@ -292,13 +431,15 @@ toggleButton.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
         toggleButton.Text = "+"
-        container.Visible = false
-        TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 350, 0, 45)}):Play()
+        navPanel.Visible = false
+        contentContainer.Visible = false
+        TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 460, 0, 45)}):Play()
     else
         toggleButton.Text = "-"
         TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = originalSize}):Play()
         task.wait(0.2)
-        container.Visible = true
+        navPanel.Visible = true
+        contentContainer.Visible = true
     end
 end)
 
