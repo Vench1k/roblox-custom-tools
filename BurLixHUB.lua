@@ -118,7 +118,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.4.1"
+titleText.Text = "BurLix HUB v1.4.2"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.Font = Enum.Font.SourceSansBold
@@ -490,20 +490,40 @@ local function updateCharacterVisuals(targetPlayer, char)
         end
     end
     
-    -- SelectionBox (Boxes) handling
-    local box = char:FindFirstChild("BurLixBox")
+    -- BillboardGui (Boxes) handling (AlwaysOnTop, visible through walls)
     if boxesEnabled then
-        if not box then
-            box = Instance.new("SelectionBox")
-            box.Name = "BurLixBox"
-            box.Color3 = Color3.fromRGB(80, 80, 250)
-            box.LineThickness = 0.05
-            box.Adornee = char
-            box.Parent = char
+        local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 2)
+        if hrp then
+            local boxGui = hrp:FindFirstChild("BurLixBoxGui")
+            if not boxGui then
+                boxGui = Instance.new("BillboardGui")
+                boxGui.Name = "BurLixBoxGui"
+                boxGui.Size = UDim2.new(4.5, 0, 6, 0)
+                boxGui.AlwaysOnTop = true
+                boxGui.ResetOnSpawn = false
+                
+                local boxFrame = Instance.new("Frame")
+                boxFrame.Size = UDim2.new(1, 0, 1, 0)
+                boxFrame.BackgroundTransparency = 1
+                boxFrame.BorderSizePixel = 0
+                boxFrame.Parent = boxGui
+                
+                local stroke = Instance.new("UIStroke")
+                stroke.Color = Color3.fromRGB(80, 80, 250)
+                stroke.Thickness = 1.5
+                stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                stroke.Parent = boxFrame
+                
+                boxGui.Parent = hrp
+            end
         end
     else
-        if box then
-            box:Destroy()
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local boxGui = hrp:FindFirstChild("BurLixBoxGui")
+            if boxGui then
+                boxGui:Destroy()
+            end
         end
     end
     
@@ -622,7 +642,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.4.1\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.4.2\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.SourceSansBold
@@ -651,7 +671,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.4.1:\n- Added 3D SelectionBox ESP (Show Boxes) to the Visuals tab.\n- Adjusted Visuals tab canvas height to support the new toggle.\n- Fixed all Visuals (Highlighting, Borders, Names) to work correctly for all players (including local player).\n- Added memory leak cleanup that disconnects all listeners on unload."
+changelogLabel.Text = "Changelog v1.4.2:\n- Updated Box ESP (Show Boxes) to be visible through walls using BillboardGui (AlwaysOnTop).\n- Fixed all Visuals (Highlighting, Borders, Names) to work correctly for all players (including local player).\n- Added memory leak cleanup that disconnects all listeners on unload."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.SourceSans
