@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -389,14 +390,14 @@ end)
 
 -- ==================== AUTHORS TAB CONTENTS ====================
 
--- Creators Info (Updated name to Gemini and added version)
+-- Creators Info
 local creatorsCard = createRow(authorsTab, "CreatorsCard", 110, 1)
 
 local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 1, -10)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.2.0\n\nCreators:\n- Vench1k\n- Gemini\n\nThank you for using BurLix HUB."
+creatorsLabel.Text = "BurLix HUB v1.3.0\n\nCreators:\n- Vench1k\n- Gemini\n\nThank you for using BurLix HUB."
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.GothamSemibold
@@ -406,13 +407,13 @@ creatorsLabel.LineHeight = 1.3
 creatorsLabel.Parent = creatorsCard
 
 -- Changelog Card
-local changelogCard = createRow(authorsTab, "ChangelogCard", 150, 2)
+local changelogCard = createRow(authorsTab, "ChangelogCard", 155, 2)
 
 local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.2.0:\n- Added Player, World, and Authors tabs.\n- Added World gravity configuration slider.\n- Replaced WalkSpeed and Jump inputs with sliders.\n- Fixed Right Shift toggle by bypass processed check.\n- Removed all mentions of playground.\n- Added versioning and Changelog cards."
+changelogLabel.Text = "Changelog v1.3.0:\n- Changed menu toggle keybind from Right Shift to P.\n- Added a persistent, draggable stats island at the top.\n- Added live FPS and Ping counters to the island.\n- Added an Open/Close toggle button to the island.\n- Removed all playground text mentions."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.Gotham
@@ -438,9 +439,89 @@ infoLabel.LineHeight = 1.3
 infoLabel.Parent = infoRow
 
 
--- ==================== INTERACTION LOGIC ====================
+-- ==================== TOP STATS ISLAND ====================
 
--- Minimize Toggle Logic
+local islandFrame = Instance.new("Frame")
+islandFrame.Name = "IslandFrame"
+islandFrame.Size = UDim2.new(0, 370, 0, 35)
+islandFrame.Position = UDim2.new(0.5, -185, 0, 15)
+islandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+islandFrame.BorderSizePixel = 0
+islandFrame.Active = true
+islandFrame.Draggable = true
+islandFrame.Parent = screenGui
+
+local islandCorner = Instance.new("UICorner")
+islandCorner.CornerRadius = UDim.new(0, 4)
+islandCorner.Parent = islandFrame
+
+local islandLayout = Instance.new("UIListLayout")
+islandLayout.FillDirection = Enum.FillDirection.Horizontal
+islandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+islandLayout.SortOrder = Enum.SortOrder.LayoutOrder
+islandLayout.Padding = UDim.new(0, 10)
+islandLayout.Parent = islandFrame
+
+local islandPadding = Instance.new("UIPadding")
+islandPadding.PaddingLeft = UDim.new(0, 10)
+islandPadding.PaddingRight = UDim.new(0, 10)
+islandPadding.Parent = islandFrame
+
+-- Helper function to create labels for the island
+local function createIslandLabel(text, sizeX, layoutOrder)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, sizeX, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 225)
+    label.TextSize = 12
+    label.Font = Enum.Font.GothamSemibold
+    label.LayoutOrder = layoutOrder
+    label.Parent = islandFrame
+    return label
+end
+
+local islandTitle = createIslandLabel("BurLix HUB", 65, 1)
+islandTitle.TextColor3 = Color3.fromRGB(80, 80, 250)
+
+local islandUser = createIslandLabel(player.DisplayName, 80, 2)
+islandUser.TextTruncate = Enum.TextTruncate.AtEnd
+
+local islandFPS = createIslandLabel("FPS: --", 50, 3)
+local islandPing = createIslandLabel("Ping: --", 60, 4)
+
+-- Toggle Button on Island
+local islandToggle = Instance.new("TextButton")
+islandToggle.Size = UDim2.new(0, 60, 0, 25)
+islandToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+islandToggle.Text = "Toggle"
+islandToggle.TextColor3 = Color3.fromRGB(240, 240, 245)
+islandToggle.TextSize = 11
+islandToggle.Font = Enum.Font.GothamBold
+islandToggle.LayoutOrder = 5
+islandToggle.Parent = islandFrame
+
+local toggleCornerBtn = Instance.new("UICorner")
+toggleCornerBtn.CornerRadius = UDim.new(0, 3)
+toggleCornerBtn.Parent = islandToggle
+
+
+-- ==================== LOGIC AND INTERACTION ====================
+
+local function toggleUI()
+    mainFrame.Visible = not mainFrame.Visible
+end
+
+islandToggle.MouseButton1Click:Connect(toggleUI)
+
+-- Toggle Menu Visibility with Key P
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.P then
+        toggleUI()
+    end
+end)
+
+-- Minimize Toggle Logic (Minimize main frame size only)
 local isMinimized = false
 local originalSize = mainFrame.Size
 
@@ -460,13 +541,13 @@ toggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Dragging Logic
+-- Main Frame Dragging Logic
 local dragging
 local dragInput
 local dragStart
 local startPos
 
-local function update(input)
+local function updateMain(input)
     local delta = input.Position - dragStart
     mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
@@ -491,15 +572,60 @@ titleBar.InputChanged:Connect(function(input)
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
+-- Island Dragging Logic
+local islandDragging
+local islandDragInput
+local islandDragStart
+local islandStartPos
+
+local function updateIsland(input)
+    local delta = input.Position - islandDragStart
+    islandFrame.Position = UDim2.new(islandStartPos.X.Scale, islandStartPos.X.Offset + delta.X, islandStartPos.Y.Scale, islandStartPos.Y.Offset + delta.Y)
+end
+
+islandFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        islandDragging = true
+        islandDragStart = input.Position
+        islandStartPos = islandFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                islandDragging = false
+            end
+        end)
     end
 end)
 
--- Toggle Menu Visibility with Right Shift (Removed gameProcessed check so it functions properly everywhere)
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.RightShift then
-        mainFrame.Visible = not mainFrame.Visible
+islandFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        islandDragInput = input
+    end
+end)
+
+-- Bind combined UserInput drag updates
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        updateMain(input)
+    elseif input == islandDragInput and islandDragging then
+        updateIsland(input)
+    end
+end)
+
+-- FPS and Ping Tracking Logic
+local lastIteration = tick()
+local frameCount = 0
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local currentTime = tick()
+    if currentTime - lastIteration >= 1 then
+        local fps = math.round(frameCount / (currentTime - lastIteration))
+        islandFPS.Text = "FPS: " .. tostring(fps)
+        frameCount = 0
+        lastIteration = currentTime
+        
+        -- Approximate round-trip ping from Player:GetNetworkPing()
+        local ping = player:GetNetworkPing()
+        islandPing.Text = "Ping: " .. string.format("%.0f ms", ping * 2000)
     end
 end)
