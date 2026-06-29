@@ -8,6 +8,13 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
+-- Compatibility polyfill for environments without math.round (standard Lua 5.1)
+if not math.round then
+    math.round = function(val)
+        return math.floor(val + 0.5)
+    end
+end
+
 -- Robust LocalPlayer lookup
 local player = Players.LocalPlayer
 if not player then
@@ -156,7 +163,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.4.6"
+titleText.Text = "BurLix HUB v1.4.7"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.Font = Enum.Font.SourceSansBold
@@ -1051,7 +1058,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.4.6\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.4.7\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.SourceSansBold
@@ -1080,7 +1087,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.4.6:\n- Replaced RGB sliders with convenient presets and a custom HEX color input text box.\n- Added smooth hover animations for function rows and tab buttons (slight darkening/highlighting).\n- Implemented smooth accordion-like animations for opening/closing function settings."
+changelogLabel.Text = "Changelog v1.4.7:\n- Added compatibility polyfill for math.round to support vanilla Lua 5.1 environments (fixes crashes on certain executors).\n- Restored missing top stats island, Visuals tab elements, and Close Button functionality."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.SourceSans
