@@ -63,7 +63,7 @@ titleCorner.Parent = titleBar
 -- Title Text
 local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
-titleText.Size = UDim2.new(1, -50, 1, 0)
+titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "BurLix HUB"
@@ -73,21 +73,14 @@ titleText.Font = Enum.Font.GothamBold
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
 
--- Minimize/Toggle Button
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(0, 30, 0, 30)
-toggleButton.Position = UDim2.new(1, -40, 0, 7)
-toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-toggleButton.Text = "-"
-toggleButton.TextColor3 = Color3.fromRGB(240, 240, 245)
-toggleButton.TextSize = 20
-toggleButton.Font = Enum.Font.GothamBold
-toggleButton.Parent = titleBar
-
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 3)
-toggleCorner.Parent = toggleButton
+-- Title Bar Separator Line
+local titleSeparator = Instance.new("Frame")
+titleSeparator.Name = "Separator"
+titleSeparator.Size = UDim2.new(1, 0, 0, 1)
+titleSeparator.Position = UDim2.new(0, 0, 0, 44)
+titleSeparator.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
+titleSeparator.BorderSizePixel = 0
+titleSeparator.Parent = titleBar
 
 -- Navigation Panel (Sidebar)
 local navPanel = Instance.new("Frame")
@@ -390,14 +383,14 @@ end)
 
 -- ==================== AUTHORS TAB CONTENTS ====================
 
--- Creators Info
-local creatorsCard = createRow(authorsTab, "CreatorsCard", 110, 1)
+-- Creators Info (Separated thank you footer to prevent clipping)
+local creatorsCard = createRow(authorsTab, "CreatorsCard", 120, 1)
 
 local creatorsLabel = Instance.new("TextLabel")
-creatorsLabel.Size = UDim2.new(1, -20, 1, -10)
+creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.3.0\n\nCreators:\n- Vench1k\n- Gemini\n\nThank you for using BurLix HUB."
+creatorsLabel.Text = "BurLix HUB v1.3.1\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.GothamSemibold
@@ -406,6 +399,17 @@ creatorsLabel.TextYAlignment = Enum.TextYAlignment.Top
 creatorsLabel.LineHeight = 1.3
 creatorsLabel.Parent = creatorsCard
 
+local thankYouLabel = Instance.new("TextLabel")
+thankYouLabel.Size = UDim2.new(1, -20, 0, 20)
+thankYouLabel.Position = UDim2.new(0, 10, 1, -25)
+thankYouLabel.BackgroundTransparency = 1
+thankYouLabel.Text = "Thank you for using BurLix HUB."
+thankYouLabel.TextColor3 = Color3.fromRGB(150, 150, 155)
+thankYouLabel.TextSize = 12
+thankYouLabel.Font = Enum.Font.GothamItalic
+thankYouLabel.TextXAlignment = Enum.TextXAlignment.Left
+thankYouLabel.Parent = creatorsCard
+
 -- Changelog Card
 local changelogCard = createRow(authorsTab, "ChangelogCard", 155, 2)
 
@@ -413,7 +417,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.3.0:\n- Changed menu toggle keybind from Right Shift to P.\n- Added a persistent, draggable stats island at the top.\n- Added live FPS and Ping counters to the island.\n- Added an Open/Close toggle button to the island.\n- Removed all playground text mentions."
+changelogLabel.Text = "Changelog v1.3.1:\n- Changed menu toggle keybind from P.\n- Added a persistent, draggable stats island at the top.\n- Added live FPS and Ping counters to the island.\n- Added an Open/Close toggle button to the island.\n- Fixed ping calculation scale matching Roblox stats.\n- Added separators to island and main frame title.\n- Fixed layout constraints of thank you footer."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.Gotham
@@ -443,8 +447,8 @@ infoLabel.Parent = infoRow
 
 local islandFrame = Instance.new("Frame")
 islandFrame.Name = "IslandFrame"
-islandFrame.Size = UDim2.new(0, 370, 0, 35)
-islandFrame.Position = UDim2.new(0.5, -185, 0, 15)
+islandFrame.Size = UDim2.new(0, 380, 0, 35)
+islandFrame.Position = UDim2.new(0.5, -190, 0, 15)
 islandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 islandFrame.BorderSizePixel = 0
 islandFrame.Active = true
@@ -484,11 +488,20 @@ end
 local islandTitle = createIslandLabel("BurLix HUB", 65, 1)
 islandTitle.TextColor3 = Color3.fromRGB(80, 80, 250)
 
-local islandUser = createIslandLabel(player.DisplayName, 80, 2)
+-- Vertical Separator on Island
+local islandSeparator = Instance.new("Frame")
+islandSeparator.Name = "Separator"
+islandSeparator.Size = UDim2.new(0, 1, 0, 18)
+islandSeparator.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+islandSeparator.BorderSizePixel = 0
+islandSeparator.LayoutOrder = 2
+islandSeparator.Parent = islandFrame
+
+local islandUser = createIslandLabel(player.DisplayName, 80, 3)
 islandUser.TextTruncate = Enum.TextTruncate.AtEnd
 
-local islandFPS = createIslandLabel("FPS: --", 50, 3)
-local islandPing = createIslandLabel("Ping: --", 60, 4)
+local islandFPS = createIslandLabel("FPS: --", 50, 4)
+local islandPing = createIslandLabel("Ping: --", 60, 5)
 
 -- Toggle Button on Island
 local islandToggle = Instance.new("TextButton")
@@ -498,7 +511,7 @@ islandToggle.Text = "Toggle"
 islandToggle.TextColor3 = Color3.fromRGB(240, 240, 245)
 islandToggle.TextSize = 11
 islandToggle.Font = Enum.Font.GothamBold
-islandToggle.LayoutOrder = 5
+islandToggle.LayoutOrder = 6
 islandToggle.Parent = islandFrame
 
 local toggleCornerBtn = Instance.new("UICorner")
@@ -518,26 +531,6 @@ islandToggle.MouseButton1Click:Connect(toggleUI)
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.P then
         toggleUI()
-    end
-end)
-
--- Minimize Toggle Logic (Minimize main frame size only)
-local isMinimized = false
-local originalSize = mainFrame.Size
-
-toggleButton.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    if isMinimized then
-        toggleButton.Text = "+"
-        navPanel.Visible = false
-        contentContainer.Visible = false
-        TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 460, 0, 45)}):Play()
-    else
-        toggleButton.Text = "-"
-        TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = originalSize}):Play()
-        task.wait(0.2)
-        navPanel.Visible = true
-        contentContainer.Visible = true
     end
 end)
 
@@ -624,8 +617,8 @@ RunService.RenderStepped:Connect(function()
         frameCount = 0
         lastIteration = currentTime
         
-        -- Approximate round-trip ping from Player:GetNetworkPing()
+        -- Approximate round-trip ping in milliseconds
         local ping = player:GetNetworkPing()
-        islandPing.Text = "Ping: " .. string.format("%.0f ms", ping * 2000)
+        islandPing.Text = "Ping: " .. string.format("%.0f ms", ping * 1000)
     end
 end)
