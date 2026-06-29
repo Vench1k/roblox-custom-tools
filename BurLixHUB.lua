@@ -327,10 +327,64 @@ local function createSlider(tabFrame, name, minVal, maxVal, defaultVal, layoutOr
     return row, updateSlider
 end
 
+-- Helper Function to Create Toggles
+local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange)
+    local row = createRow(tabFrame, name .. "Row", 45, layoutOrder)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -60, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(220, 220, 225)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamSemibold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = row
+    
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 40, 0, 20)
+    toggleButton.Position = UDim2.new(1, -50, 0.5, -10)
+    toggleButton.BackgroundColor3 = defaultVal and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(35, 35, 40)
+    toggleButton.Text = ""
+    toggleButton.Parent = row
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 10)
+    toggleCorner.Parent = toggleButton
+    
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = defaultVal and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    knob.BackgroundColor3 = Color3.fromRGB(240, 240, 245)
+    knob.BorderSizePixel = 0
+    knob.Parent = toggleButton
+    
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = knob
+    
+    local enabled = defaultVal
+    
+    toggleButton.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        local targetColor = enabled and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(35, 35, 40)
+        local targetPos = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        
+        TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
+        TweenService:Create(knob, TweenInfo.new(0.2), {Position = targetPos}):Play()
+        
+        onChange(enabled)
+    end)
+    
+    return row
+end
+
 -- Create Tabs
 local playerTab = createTab("Player", 1, 350)
 local worldTab = createTab("World", 2, 350)
 local authorsTab = createTab("Authors", 3, 500) -- Larger canvas height for changelog details
+local visualsTab = createTab("Visuals", 4, 350)
 
 -- DEFAULT TAB SETTINGS
 showTab("Player")
@@ -432,7 +486,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.3.4\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.3.5\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.GothamSemibold
@@ -459,7 +513,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.3.4:\n- Fixed critical runtime crash by defining minJump/maxJump variables.\n- Restored top stats island, World/Authors tabs, and Close button.\n- Added anti-double-run check to destroy old UI instances (v1.3.3).\n- Fixed respawn settings re-application to new humanoid (v1.3.3).\n- Replaced tick() with os.clock() in FPS loop (v1.3.3)."
+changelogLabel.Text = "Changelog v1.3.5:\n- Added Visuals tab (v1.3.5).\n- Added Toggles for Enable Highlighting, Enable Borders, and Show Names (v1.3.5).\n- Implemented animated UI toggle switch component with TweenService transitions (v1.3.5)."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.Gotham
@@ -483,6 +537,24 @@ infoLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoLabel.TextYAlignment = Enum.TextYAlignment.Top
 infoLabel.LineHeight = 1.3
 infoLabel.Parent = infoRow
+
+
+-- ==================== VISUALS TAB CONTENTS ====================
+
+-- Toggle for Highlighting
+createToggle(visualsTab, "Enable Highlighting", false, 1, function(state)
+    -- Logic for player highlighting to be implemented by user
+end)
+
+-- Toggle for Borders
+createToggle(visualsTab, "Enable Borders", false, 2, function(state)
+    -- Logic for player borders to be implemented by user
+end)
+
+-- Toggle for Show Names
+createToggle(visualsTab, "Show Names", false, 3, function(state)
+    -- Logic for player names to be implemented by user
+end)
 
 
 -- ==================== TOP STATS ISLAND ====================
