@@ -131,7 +131,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.4.3"
+titleText.Text = "BurLix HUB v1.4.4"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.Font = Enum.Font.SourceSansBold
@@ -376,7 +376,20 @@ end
 
 -- Helper Function to Create Toggles
 local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, onRightClick)
-    local row = createRow(tabFrame, name .. "Row", 45, layoutOrder)
+    -- Create row as TextButton to capture clicks across the whole row area
+    local row = Instance.new("TextButton")
+    row.Name = name .. "Row"
+    row.Size = UDim2.new(1, 0, 0, 45)
+    row.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    row.BorderSizePixel = 0
+    row.LayoutOrder = layoutOrder
+    row.Text = ""
+    row.AutoButtonColor = false -- Disable default dark overlay on click to keep custom theme
+    row.Parent = tabFrame
+    
+    local rowCorner = Instance.new("UICorner")
+    rowCorner.CornerRadius = UDim.new(0, 3)
+    rowCorner.Parent = row
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -60, 1, 0)
@@ -389,11 +402,12 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = row
     
-    local toggleButton = Instance.new("TextButton")
+    -- Make toggleButton a Frame, so clicks on it fall through to the row TextButton
+    local toggleButton = Instance.new("Frame")
     toggleButton.Size = UDim2.new(0, 40, 0, 20)
     toggleButton.Position = UDim2.new(1, -50, 0.5, -10)
     toggleButton.BackgroundColor3 = defaultVal and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(35, 35, 40)
-    toggleButton.Text = ""
+    toggleButton.BorderSizePixel = 0
     toggleButton.Parent = row
     
     local toggleCorner = Instance.new("UICorner")
@@ -413,7 +427,8 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     
     local enabled = defaultVal
     
-    toggleButton.MouseButton1Click:Connect(function()
+    -- Click logic for the entire row (MouseButton1Click for toggle)
+    table.insert(connections, row.MouseButton1Click:Connect(function()
         enabled = not enabled
         local targetColor = enabled and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(35, 35, 40)
         local targetPos = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
@@ -422,18 +437,12 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
         TweenService:Create(knob, TweenInfo.new(0.2), {Position = targetPos}):Play()
         
         onChange(enabled)
-    end)
+    end))
     
+    -- Right click logic for the entire row (MouseButton2Click to open settings)
     if onRightClick then
-        table.insert(connections, row.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton2 then
-                onRightClick()
-            end
-        end))
-        table.insert(connections, label.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton2 then
-                onRightClick()
-            end
+        table.insert(connections, row.MouseButton2Click:Connect(function()
+            onRightClick()
         end))
     end
     
@@ -852,7 +861,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.4.3\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.4.4\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.SourceSansBold
@@ -881,7 +890,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.4.3:\n- Added right-click (MouseButton2) Settings Panel for all Visuals functions.\n- Added Color and Thickness/Size/Transparency sliders for Highlight, Border, Names, and Box ESP.\n- Increased Visuals tab canvas height to prevent layout clipping."
+changelogLabel.Text = "Changelog v1.4.4:\n- Made entire row click-to-toggle (LMB) and click-to-configure (RMB).\n- Fixed right-click (MouseButton2) Settings Panel activation issues."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.SourceSans
