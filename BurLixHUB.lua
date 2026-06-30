@@ -116,10 +116,11 @@ local islandScale = nil
 local islandToggle = nil
 
 local tabs = {}
-local tabIcons = {
-    Player = "rbxassetid://10747373176",  -- Человечек (User)
-    World = "rbxassetid://10723395995",   -- Глобус (Globe)
-    Visuals = "rbxassetid://10734950309"  -- Глаз (Eye)
+-- Text-based icons for sidebar tabs — rendered as TextLabels, guaranteed to display
+local tabIconText = {
+    Player = "\xE2\x97\x8F",   -- filled circle (person)
+    World  = "\xE2\x97\x8B",  -- open circle (globe)
+    Visuals = "\xE2\x97\x86" -- filled diamond (eye)
 }
 
 -- Font Families Setup
@@ -356,9 +357,12 @@ local function updateTabColors()
                 }):Play()
             end
             if data.Icon then
-                TweenService:Create(data.Icon, tweenInfo, {
-                    ImageColor3 = targetTextColor
-                }):Play()
+                -- Icon is now a TextLabel, use TextColor3
+                pcall(function()
+                    TweenService:Create(data.Icon, tweenInfo, {
+                        TextColor3 = targetTextColor
+                    }):Play()
+                end)
             end
         end)
     end
@@ -510,7 +514,7 @@ end))
 local function toggleUI()
     mainFrame.Visible = not mainFrame.Visible
     if islandToggle then
-        islandToggle.Text = mainFrame.Visible and "▲" or "▼"
+        islandToggle.Text = mainFrame.Visible and "∧" or "∨"
     end
 end
 
@@ -519,7 +523,7 @@ end
 islandFrame = Instance.new("Frame")
 islandFrame.Name = "IslandFrame"
 islandFrame.AnchorPoint = Vector2.new(0.5, 0)
-islandFrame.Size = UDim2.new(0, 250, 0, 35)
+islandFrame.Size = UDim2.new(0, 270, 0, 35)
 islandFrame.Position = UDim2.new(0.5, 0, 0, 15)
 islandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 islandFrame.BorderSizePixel = 0
@@ -540,7 +544,7 @@ local islandLayout = Instance.new("UIListLayout")
 islandLayout.FillDirection = Enum.FillDirection.Horizontal
 islandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 islandLayout.SortOrder = Enum.SortOrder.LayoutOrder
-islandLayout.Padding = UDim.new(0, 10)
+islandLayout.Padding = UDim.new(0, 6)
 islandLayout.Parent = islandFrame
 
 local islandPadding = Instance.new("UIPadding")
@@ -587,9 +591,9 @@ islandPing.Visible = pingVisible
 islandToggle = Instance.new("TextButton")
 islandToggle.Size = UDim2.new(0, 25, 0, 25)
 islandToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-islandToggle.Text = mainFrame.Visible and "▲" or "▼"
+islandToggle.Text = mainFrame.Visible and "∧" or "∨"
 islandToggle.TextColor3 = Color3.fromRGB(240, 240, 245)
-islandToggle.TextSize = 12
+islandToggle.TextSize = 14
 islandToggle.LayoutOrder = 5
 islandToggle.Parent = islandFrame
 registerFontElement(islandToggle, "Bold")
@@ -621,7 +625,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.8.3"
+titleText.Text = "BurLix HUB v1.8.4"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -850,9 +854,7 @@ table.insert(connections, profileClickButton.MouseLeave:Connect(function()
     end
 end))
 
-table.insert(connections, profileClickButton.MouseButton1Click:Connect(function()
-    showTab("Authors")
-end))
+-- Profile card click will be connected after showTab is declared below
 
 -- Content Container Panel (Right side)
 local contentContainer = Instance.new("Frame")
@@ -882,6 +884,11 @@ local function showTab(tabName)
     pcall(updateTabColors)
 end
 
+-- Connect profile card click now that showTab is declared
+table.insert(connections, profileClickButton.MouseButton1Click:Connect(function()
+    showTab("Authors")
+end))
+
 local function createTab(name, layoutOrder, canvasHeight)
     -- Navigation Button
     local btn = Instance.new("TextButton")
@@ -903,16 +910,18 @@ local function createTab(name, layoutOrder, canvasHeight)
     local label = nil
 
     if not isHidden then
-        -- Icon Label
-        local iconId = tabIcons[name]
-        if iconId then
-            icon = Instance.new("ImageLabel")
+        -- Text-based icon (guaranteed cross-platform display)
+        local iconChar = tabIconText and tabIconText[name]
+        if iconChar then
+            icon = Instance.new("TextLabel")
             icon.Name = "Icon"
-            icon.Size = UDim2.new(0, 16, 0, 16)
-            icon.Position = UDim2.new(0, 8, 0.5, -8)
+            icon.Size = UDim2.new(0, 18, 1, 0)
             icon.BackgroundTransparency = 1
-            icon.Image = iconId
-            icon.ImageColor3 = Color3.fromRGB(220, 220, 225)
+            icon.Text = iconChar
+            icon.TextColor3 = Color3.fromRGB(220, 220, 225)
+            icon.TextSize = 14
+            icon.Font = Enum.Font.SourceSansBold
+            icon.TextXAlignment = Enum.TextXAlignment.Center
             icon.Active = false
             icon.Selectable = false
             icon.Parent = btn
@@ -921,8 +930,8 @@ local function createTab(name, layoutOrder, canvasHeight)
         -- Text Label
         label = Instance.new("TextLabel")
         label.Name = "Label"
-        label.Size = UDim2.new(1, icon and -32 or -16, 1, 0)
-        label.Position = UDim2.new(0, icon and 28 or 8, 0, 0)
+        label.Size = UDim2.new(1, icon and -26 or -12, 1, 0)
+        label.Position = UDim2.new(0, icon and 24 or 8, 0, 0)
         label.BackgroundTransparency = 1
         label.Text = name
         label.TextColor3 = Color3.fromRGB(220, 220, 225)
@@ -980,6 +989,7 @@ local function createTab(name, layoutOrder, canvasHeight)
         showTab(name)
     end)
 
+    -- Also update icon color on updateTabColors (icon is a TextLabel now, use TextColor3)
     return frame
 end
 
