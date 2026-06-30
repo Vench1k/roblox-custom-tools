@@ -90,6 +90,7 @@ end
 
 -- Fallback Settings
 local currentWalkSpeed = 16
+-- Checkbox configuration to determine Jump mode vs standard configurations
 local isJumpPower = true
 local currentJumpValue = 50
 local minJump = 0
@@ -113,6 +114,62 @@ local resizeDragInput = nil
 local resizeStartPos = nil
 local resizeStartSize = nil
 local mainScale = nil
+local menuContainer = nil
+local islandScale = nil
+
+-- Font Families Setup
+local currentFontFamily = "SourceSans"
+local fontFamilies = {
+    SourceSans = {
+        Regular = Enum.Font.SourceSans,
+        Bold = Enum.Font.SourceSansBold
+    },
+    Roboto = {
+        Regular = Enum.Font.Roboto,
+        Bold = Enum.Font.RobotoBold
+    },
+    Gotham = {
+        Regular = Enum.Font.Gotham,
+        Bold = Enum.Font.GothamBold
+    },
+    Code = {
+        Regular = Enum.Font.Code,
+        Bold = Enum.Font.Code
+    },
+    Ubuntu = {
+        Regular = Enum.Font.Ubuntu,
+        Bold = Enum.Font.Ubuntu
+    }
+}
+local fontElements = {
+    Regular = {},
+    Bold = {}
+}
+
+local function registerFontElement(element, weight)
+    if fontElements[weight] then
+        table.insert(fontElements[weight], element)
+    end
+    local fontData = fontFamilies[currentFontFamily]
+    if fontData and fontData[weight] then
+        pcall(function()
+            element.Font = fontData[weight]
+        end)
+    end
+end
+
+local function applyFontFamily(fontName)
+    currentFontFamily = fontName
+    local fontData = fontFamilies[fontName]
+    if not fontData then return end
+    
+    for _, elem in ipairs(fontElements.Regular) do
+        pcall(function() elem.Font = fontData.Regular end)
+    end
+    for _, elem in ipairs(fontElements.Bold) do
+        pcall(function() elem.Font = fontData.Bold end)
+    end
+end
 
 -- Visuals State variables
 local highlightEnabled = false
@@ -205,6 +262,38 @@ local themes = {
         Sidebar = Color3.fromRGB(32, 18, 18),
         Card = Color3.fromRGB(46, 26, 26),
         Text = Color3.fromRGB(255, 235, 230)
+    },
+    Midnight = {
+        Background = Color3.fromRGB(10, 10, 15),
+        Header = Color3.fromRGB(18, 18, 24),
+        Accent = Color3.fromRGB(0, 120, 255),
+        Sidebar = Color3.fromRGB(14, 14, 20),
+        Card = Color3.fromRGB(22, 22, 30),
+        Text = Color3.fromRGB(220, 225, 235)
+    },
+    Emerald = {
+        Background = Color3.fromRGB(12, 24, 18),
+        Header = Color3.fromRGB(18, 36, 28),
+        Accent = Color3.fromRGB(46, 204, 113),
+        Sidebar = Color3.fromRGB(15, 30, 23),
+        Card = Color3.fromRGB(22, 45, 35),
+        Text = Color3.fromRGB(230, 245, 235)
+    },
+    Nebula = {
+        Background = Color3.fromRGB(20, 10, 30),
+        Header = Color3.fromRGB(30, 15, 45),
+        Accent = Color3.fromRGB(255, 0, 255),
+        Sidebar = Color3.fromRGB(25, 12, 38),
+        Card = Color3.fromRGB(38, 20, 58),
+        Text = Color3.fromRGB(240, 220, 255)
+    },
+    Monochrome = {
+        Background = Color3.fromRGB(20, 20, 20),
+        Header = Color3.fromRGB(35, 35, 35),
+        Accent = Color3.fromRGB(255, 255, 255),
+        Sidebar = Color3.fromRGB(28, 28, 28),
+        Card = Color3.fromRGB(45, 45, 45),
+        Text = Color3.fromRGB(240, 240, 240)
     }
 }
 
@@ -250,13 +339,24 @@ local function updateTabColors()
     if not colors then return end
     local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     for name, data in pairs(tabs) do
-        local targetColor = (name == activeTabName) and colors.Card or colors.Sidebar
-        pcall(function() TweenService:Create(data.Button, tweenInfo, {BackgroundColor3 = targetColor}):Play() end)
-        data.Button.TextColor3 = colors.Text
+        local targetBgColor = (name == activeTabName) and colors.Card or colors.Sidebar
+        local targetTextColor = (name == activeTabName) and colors.Accent or colors.Text
+        pcall(function()
+            TweenService:Create(data.Button, tweenInfo, {
+                BackgroundColor3 = targetBgColor,
+                TextColor3 = targetTextColor
+            }):Play()
+        end)
     end
     if settingsButton then
-        local targetSettingsColor = (activeTabName == "Settings") and colors.Accent or colors.Header
-        pcall(function() TweenService:Create(settingsButton, tweenInfo, {BackgroundColor3 = targetSettingsColor}):Play() end)
+        local targetSettingsBgColor = (activeTabName == "Settings") and colors.Accent or colors.Header
+        local targetSettingsTextColor = (activeTabName == "Settings") and Color3.fromRGB(255, 255, 255) or colors.Text
+        pcall(function()
+            TweenService:Create(settingsButton, tweenInfo, {
+                BackgroundColor3 = targetSettingsBgColor,
+                TextColor3 = targetSettingsTextColor
+            }):Play()
+        end)
     end
 end
 
@@ -317,14 +417,22 @@ mainFrame.Draggable = false
 mainFrame.Parent = screenGui
 registerThemeElement(mainFrame, "Background")
 
-mainScale = Instance.new("UIScale")
-mainScale.Scale = 1.0
-mainScale.Parent = mainFrame
-
 -- UI Corner for Main Frame (Less rounded)
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 4)
 mainCorner.Parent = mainFrame
+
+-- Container for content that will be scaled (leaving mainFrame and resizeGrip outside)
+menuContainer = Instance.new("Frame")
+menuContainer.Name = "MenuContainer"
+menuContainer.Size = UDim2.new(1, 0, 1, 0)
+menuContainer.BackgroundTransparency = 1
+menuContainer.BorderSizePixel = 0
+menuContainer.Parent = mainFrame
+
+mainScale = Instance.new("UIScale")
+mainScale.Scale = 1.0
+mainScale.Parent = menuContainer
 
 local resizeGrip = Instance.new("TextButton")
 resizeGrip.Name = "ResizeGrip"
@@ -334,10 +442,10 @@ resizeGrip.BackgroundTransparency = 1
 resizeGrip.Text = "◢"
 resizeGrip.TextColor3 = Color3.fromRGB(150, 150, 155)
 resizeGrip.TextSize = 12
-resizeGrip.Font = Enum.Font.SourceSansBold
 resizeGrip.Active = true
 resizeGrip.Parent = mainFrame
 registerThemeElement(resizeGrip, "Text")
+registerFontElement(resizeGrip, "Bold")
 
 -- Resize Grip Hover effect
 table.insert(connections, resizeGrip.MouseEnter:Connect(function()
@@ -355,8 +463,9 @@ end))
 
 local function updateResize(input)
     local delta = input.Position - resizeStartPos
-    local newWidth = math.clamp(resizeStartSize.X + delta.X, 450, 800)
-    local newHeight = math.clamp(resizeStartSize.Y + delta.Y, 320, 600)
+    local viewportSize = Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+    local newWidth = math.clamp(resizeStartSize.X + delta.X, 450, viewportSize.X)
+    local newHeight = math.clamp(resizeStartSize.Y + delta.Y, 320, viewportSize.Y)
     mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
 end
 
@@ -392,14 +501,19 @@ end
 
 islandFrame = Instance.new("Frame")
 islandFrame.Name = "IslandFrame"
+islandFrame.AnchorPoint = Vector2.new(0.5, 0)
 islandFrame.Size = UDim2.new(0, 380, 0, 35)
-islandFrame.Position = UDim2.new(0.5, -190, 0, 15)
+islandFrame.Position = UDim2.new(0.5, 0, 0, 15)
 islandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 islandFrame.BorderSizePixel = 0
 islandFrame.Active = true
 islandFrame.Draggable = true
 islandFrame.Parent = screenGui
 registerThemeElement(islandFrame, "Sidebar")
+
+islandScale = Instance.new("UIScale")
+islandScale.Scale = 1.0
+islandScale.Parent = islandFrame
 
 local islandCorner = Instance.new("UICorner")
 islandCorner.CornerRadius = UDim.new(0, 4)
@@ -425,10 +539,10 @@ local function createIslandLabel(text, sizeX, layoutOrder, isAccent)
     label.Text = text
     label.TextColor3 = Color3.fromRGB(220, 220, 225)
     label.TextSize = 12
-    label.Font = Enum.Font.SourceSansBold
     label.LayoutOrder = layoutOrder
     label.Parent = islandFrame
     registerThemeElement(label, isAccent and "Accent" or "Text")
+    registerFontElement(label, "Bold")
     return label
 end
 
@@ -462,9 +576,9 @@ islandToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
 islandToggle.Text = "Toggle"
 islandToggle.TextColor3 = Color3.fromRGB(240, 240, 245)
 islandToggle.TextSize = 11
-islandToggle.Font = Enum.Font.SourceSansBold
 islandToggle.LayoutOrder = 6
 islandToggle.Parent = islandFrame
+registerFontElement(islandToggle, "Bold")
 registerThemeElement(islandToggle, "Card")
 registerThemeElement(islandToggle, "Text")
 
@@ -480,7 +594,7 @@ titleBar.Name = "TitleBar"
 titleBar.Size = UDim2.new(1, 0, 0, 45)
 titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
+titleBar.Parent = menuContainer
 registerThemeElement(titleBar, "Header")
 
 local titleCorner = Instance.new("UICorner")
@@ -493,13 +607,13 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.7.1"
+titleText.Text = "BurLix HUB v1.8.0"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
-titleText.Font = Enum.Font.SourceSansBold
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
 registerThemeElement(titleText, "Text")
+registerFontElement(titleText, "Bold")
 
 -- Title Bar Separator Line
 local titleSeparator = Instance.new("Frame")
@@ -520,9 +634,8 @@ settingsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
 settingsButton.Text = "⚙"
 settingsButton.TextColor3 = Color3.fromRGB(240, 240, 245)
 settingsButton.TextSize = 14
-settingsButton.Font = Enum.Font.SourceSansBold
 settingsButton.Parent = titleBar
-registerThemeElement(settingsButton, "Header")
+registerFontElement(settingsButton, "Bold")
 
 local settingsCorner = Instance.new("UICorner")
 settingsCorner.CornerRadius = UDim.new(0, 3)
@@ -582,7 +695,7 @@ navPanel.Size = UDim2.new(0, 110, 1, -45)
 navPanel.Position = UDim2.new(0, 0, 0, 45)
 navPanel.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 navPanel.BorderSizePixel = 0
-navPanel.Parent = mainFrame
+navPanel.Parent = menuContainer
 registerThemeElement(navPanel, "Sidebar")
 
 local navCorner = Instance.new("UICorner")
@@ -608,7 +721,7 @@ contentContainer.Size = UDim2.new(1, -110, 1, -45)
 contentContainer.Position = UDim2.new(0, 110, 0, 45)
 contentContainer.BackgroundTransparency = 1
 contentContainer.BorderSizePixel = 0
-contentContainer.Parent = mainFrame
+contentContainer.Parent = menuContainer
 
 -- Tab system logic
 local tabs = {}
@@ -641,7 +754,6 @@ local function createTab(name, layoutOrder, canvasHeight)
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(220, 220, 225)
     btn.TextSize = 13
-    btn.Font = Enum.Font.SourceSansBold
     btn.LayoutOrder = layoutOrder
     btn.Parent = navPanel
 
@@ -694,7 +806,7 @@ local function createTab(name, layoutOrder, canvasHeight)
         showTab(name)
     end)
 
-    registerThemeElement(btn, "Text")
+    registerFontElement(btn, "Bold")
 
     return frame
 end
@@ -1332,7 +1444,7 @@ table.insert(connections, keybindInput.FocusLost:Connect(function(enterPressed)
 end))
 
 -- Theme Selector Row
-local themeRow = createRow(settingsTab, "ThemeRow", 80, 5)
+local themeRow = createRow(settingsTab, "ThemeRow", 105, 5)
 
 local themeLabel = Instance.new("TextLabel")
 themeLabel.Size = UDim2.new(1, -20, 0, 20)
@@ -1341,10 +1453,10 @@ themeLabel.BackgroundTransparency = 1
 themeLabel.Text = "Menu Theme"
 themeLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 themeLabel.TextSize = 14
-themeLabel.Font = Enum.Font.SourceSansBold
 themeLabel.TextXAlignment = Enum.TextXAlignment.Left
 themeLabel.Parent = themeRow
 registerThemeElement(themeLabel, "Text")
+registerFontElement(themeLabel, "Bold")
 
 local themeContainer = Instance.new("Frame")
 themeContainer.Size = UDim2.new(1, -20, 1, -34)
@@ -1359,16 +1471,16 @@ themeLayout.CellPadding = UDim2.new(0, 4, 0, 4)
 themeLayout.SortOrder = Enum.SortOrder.LayoutOrder
 themeLayout.Parent = themeContainer
 
-local themeNames = {"Dark", "Purple", "Aqua", "Sakura", "Cyberpunk", "Forest", "Nordic", "Sunset"}
+local themeNames = {"Dark", "Purple", "Aqua", "Sakura", "Cyberpunk", "Forest", "Nordic", "Sunset", "Midnight", "Emerald", "Nebula", "Monochrome"}
 for idx, name in ipairs(themeNames) do
     local btn = Instance.new("TextButton")
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(220, 220, 225)
     btn.TextSize = 10
-    btn.Font = Enum.Font.SourceSansBold
     btn.LayoutOrder = idx
     btn.Parent = themeContainer
+    registerFontElement(btn, "Bold")
     
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 3)
@@ -1396,10 +1508,86 @@ end
 
 -- UI Scale Slider
 local scaleSliderRow, updateScaleSlider = createSlider(settingsTab, "UI Scale", 50, 150, 100, 6, function(val)
+    local scale = val / 100
     if mainScale then
-        mainScale.Scale = val / 100
+        mainScale.Scale = scale
+    end
+    if menuContainer then
+        menuContainer.Size = UDim2.new(1 / scale, 0, 1 / scale, 0)
     end
 end, "%")
+
+-- Island Scale Slider
+local islandScaleSliderRow, updateIslandScaleSlider = createSlider(settingsTab, "Island Scale", 50, 150, 100, 7, function(val)
+    if islandScale then
+        islandScale.Scale = val / 100
+    end
+end, "%")
+
+-- Font Selector Row
+local fontRow = createRow(settingsTab, "FontRow", 80, 8)
+
+local fontLabel = Instance.new("TextLabel")
+fontLabel.Size = UDim2.new(1, -20, 0, 20)
+fontLabel.Position = UDim2.new(0, 10, 0, 6)
+fontLabel.BackgroundTransparency = 1
+fontLabel.Text = "Menu Font"
+fontLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
+fontLabel.TextSize = 14
+fontLabel.TextXAlignment = Enum.TextXAlignment.Left
+fontLabel.Parent = fontRow
+registerThemeElement(fontLabel, "Text")
+registerFontElement(fontLabel, "Bold")
+
+local fontContainer = Instance.new("Frame")
+fontContainer.Size = UDim2.new(1, -20, 1, -34)
+fontContainer.Position = UDim2.new(0, 10, 0, 28)
+fontContainer.BackgroundTransparency = 1
+fontContainer.BorderSizePixel = 0
+fontContainer.Parent = fontRow
+
+local fontLayout = Instance.new("UIGridLayout")
+fontLayout.CellSize = UDim2.new(0, 75, 0, 20)
+fontLayout.CellPadding = UDim2.new(0, 6, 0, 4)
+fontLayout.SortOrder = Enum.SortOrder.LayoutOrder
+fontLayout.Parent = fontContainer
+
+local fontNames = {"SourceSans", "Roboto", "Gotham", "Code", "Ubuntu"}
+for idx, name in ipairs(fontNames) do
+    local btn = Instance.new("TextButton")
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(220, 220, 225)
+    btn.TextSize = 11
+    btn.Font = fontFamilies[name].Bold
+    btn.LayoutOrder = idx
+    btn.Parent = fontContainer
+    registerFontElement(btn, "Bold")
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 3)
+    btnCorner.Parent = btn
+    
+    local function updateBtnStyle()
+        local colors = themes[currentTheme]
+        if currentFontFamily == name then
+            btn.BackgroundColor3 = colors.Accent
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            btn.BackgroundColor3 = colors.Sidebar
+            btn.TextColor3 = colors.Text
+        end
+    end
+    
+    table.insert(toggleUpdaters, updateBtnStyle)
+    
+    table.insert(connections, btn.MouseButton1Click:Connect(function()
+        applyFontFamily(name)
+        applyTheme(currentTheme)
+    end))
+    
+    updateBtnStyle()
+end
 
 -- DEFAULT TAB SETTINGS
 showTab("Player")
@@ -1651,16 +1839,16 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.7.1\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.8.0\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
-creatorsLabel.Font = Enum.Font.SourceSansBold
 creatorsLabel.TextXAlignment = Enum.TextXAlignment.Left
 creatorsLabel.TextYAlignment = Enum.TextYAlignment.Top
 creatorsLabel.LineHeight = 1.3
 creatorsLabel.TextWrapped = true
 creatorsLabel.Parent = creatorsCard
 registerThemeElement(creatorsLabel, "Text")
+registerFontElement(creatorsLabel, "Bold")
 
 local thankYouLabel = Instance.new("TextLabel")
 thankYouLabel.Size = UDim2.new(1, -20, 0, 20)
@@ -1669,11 +1857,11 @@ thankYouLabel.BackgroundTransparency = 1
 thankYouLabel.Text = "Thank you for using BurLix HUB."
 thankYouLabel.TextColor3 = Color3.fromRGB(150, 150, 155)
 thankYouLabel.TextSize = 12
-thankYouLabel.Font = Enum.Font.SourceSans
 thankYouLabel.TextXAlignment = Enum.TextXAlignment.Left
 thankYouLabel.TextWrapped = true
 thankYouLabel.Parent = creatorsCard
 registerThemeElement(thankYouLabel, "Text")
+registerFontElement(thankYouLabel, "Regular")
 
 -- Changelog Card (Taller to comfortably fit wrapped version history text)
 local changelogCard = createRow(authorsTab, "ChangelogCard", 195, 2)
@@ -1682,16 +1870,16 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.7.1:\n- Added UI Scale slider in settings tab to scale menu contents.\n- Replaced horizontal scrollbar for themes with an adaptive grid (no scrolling needed).\n- Fixed theme colors not updating sidebar buttons instantly on change."
+changelogLabel.Text = "Changelog v1.8.0:\n- Fixed UI Scale to scale only contents, leaving frame borders and resize grip intact.\n- Removed menu resize limits, allowing stretching up to full screen.\n- Added Island Scale slider in settings to adjust stats island size.\n- Added Font Selection: SourceSans, Roboto, Gotham, Code, Ubuntu.\n- Added 4 new visual themes: Midnight, Emerald, Nebula, Monochrome.\n- Fixed tab selection theme reset issue."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
-changelogLabel.Font = Enum.Font.SourceSans
 changelogLabel.TextXAlignment = Enum.TextXAlignment.Left
 changelogLabel.TextYAlignment = Enum.TextYAlignment.Top
 changelogLabel.LineHeight = 1.3
 changelogLabel.TextWrapped = true
 changelogLabel.Parent = changelogCard
 registerThemeElement(changelogLabel, "Text")
+registerFontElement(changelogLabel, "Regular")
 
 -- User Info Card
 local infoRow = createRow(authorsTab, "InfoRow", 100, 3)
@@ -1711,13 +1899,13 @@ end)
 infoLabel.Text = string.format("User: %s\nDisplay: %s\nAccount Age: %s days\nPlatform: Roblox Client", username, displayName, tostring(accountAge))
 infoLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 infoLabel.TextSize = 13
-infoLabel.Font = Enum.Font.SourceSans
 infoLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoLabel.TextYAlignment = Enum.TextYAlignment.Top
 infoLabel.LineHeight = 1.3
 infoLabel.TextWrapped = true
 infoLabel.Parent = infoRow
 registerThemeElement(infoLabel, "Text")
+registerFontElement(infoLabel, "Regular")
 
 
 -- ==================== VISUALS TAB CONTENTS ====================
