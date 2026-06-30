@@ -108,6 +108,10 @@ local menuKeybind = Enum.KeyCode.P
 local islandFrame = nil
 local islandFPS = nil
 local islandPing = nil
+local resizing = false
+local resizeDragInput = nil
+local resizeStartPos = nil
+local resizeStartSize = nil
 
 -- Visuals State variables
 local highlightEnabled = false
@@ -168,6 +172,38 @@ local themes = {
         Sidebar = Color3.fromRGB(40, 28, 35),
         Card = Color3.fromRGB(55, 38, 48),
         Text = Color3.fromRGB(255, 240, 245)
+    },
+    Cyberpunk = {
+        Background = Color3.fromRGB(15, 12, 22),
+        Header = Color3.fromRGB(22, 18, 32),
+        Accent = Color3.fromRGB(255, 0, 128),
+        Sidebar = Color3.fromRGB(18, 15, 26),
+        Card = Color3.fromRGB(30, 22, 42),
+        Text = Color3.fromRGB(0, 255, 255)
+    },
+    Forest = {
+        Background = Color3.fromRGB(15, 22, 18),
+        Header = Color3.fromRGB(20, 32, 25),
+        Accent = Color3.fromRGB(50, 200, 120),
+        Sidebar = Color3.fromRGB(18, 26, 21),
+        Card = Color3.fromRGB(25, 42, 32),
+        Text = Color3.fromRGB(230, 245, 235)
+    },
+    Nordic = {
+        Background = Color3.fromRGB(32, 36, 44),
+        Header = Color3.fromRGB(40, 44, 52),
+        Accent = Color3.fromRGB(120, 180, 240),
+        Sidebar = Color3.fromRGB(36, 40, 48),
+        Card = Color3.fromRGB(48, 54, 66),
+        Text = Color3.fromRGB(240, 244, 248)
+    },
+    Sunset = {
+        Background = Color3.fromRGB(28, 16, 16),
+        Header = Color3.fromRGB(36, 20, 20),
+        Accent = Color3.fromRGB(240, 110, 50),
+        Sidebar = Color3.fromRGB(32, 18, 18),
+        Card = Color3.fromRGB(46, 26, 26),
+        Text = Color3.fromRGB(255, 235, 230)
     }
 }
 
@@ -269,7 +305,7 @@ mainFrame.Position = UDim2.new(0.5, -300, 0.5, -210)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
-mainFrame.Draggable = true
+mainFrame.Draggable = false
 mainFrame.Parent = screenGui
 registerThemeElement(mainFrame, "Background")
 
@@ -277,6 +313,64 @@ registerThemeElement(mainFrame, "Background")
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 4)
 mainCorner.Parent = mainFrame
+
+local resizeGrip = Instance.new("TextButton")
+resizeGrip.Name = "ResizeGrip"
+resizeGrip.Size = UDim2.new(0, 16, 0, 16)
+resizeGrip.Position = UDim2.new(1, -16, 1, -16)
+resizeGrip.BackgroundTransparency = 1
+resizeGrip.Text = "◢"
+resizeGrip.TextColor3 = Color3.fromRGB(150, 150, 155)
+resizeGrip.TextSize = 12
+resizeGrip.Font = Enum.Font.SourceSansBold
+resizeGrip.Active = true
+resizeGrip.Parent = mainFrame
+registerThemeElement(resizeGrip, "Text")
+
+-- Resize Grip Hover effect
+table.insert(connections, resizeGrip.MouseEnter:Connect(function()
+    local colors = themes[currentTheme]
+    if colors then
+        TweenService:Create(resizeGrip, TweenInfo.new(0.2), {TextColor3 = colors.Accent}):Play()
+    end
+end))
+table.insert(connections, resizeGrip.MouseLeave:Connect(function()
+    local colors = themes[currentTheme]
+    if colors then
+        TweenService:Create(resizeGrip, TweenInfo.new(0.2), {TextColor3 = colors.Text}):Play()
+    end
+end))
+
+local function updateResize(input)
+    local delta = input.Position - resizeStartPos
+    local newWidth = math.clamp(resizeStartSize.X + delta.X, 450, 800)
+    local newHeight = math.clamp(resizeStartSize.Y + delta.Y, 320, 600)
+    mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+end
+
+table.insert(connections, resizeGrip.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = true
+        resizeStartPos = input.Position
+        resizeStartSize = mainFrame.AbsoluteSize
+        
+        local changedConn
+        changedConn = input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                resizing = false
+                if changedConn then
+                    changedConn:Disconnect()
+                end
+            end
+        end)
+    end
+end))
+
+table.insert(connections, resizeGrip.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        resizeDragInput = input
+    end
+end))
 
 local function toggleUI()
     mainFrame.Visible = not mainFrame.Visible
@@ -387,7 +481,7 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.6.0"
+titleText.Text = "BurLix HUB v1.7.0"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.Font = Enum.Font.SourceSansBold
@@ -605,7 +699,7 @@ local function createRow(tabFrame, name, height, layoutOrder)
 
     local rowCorner = Instance.new("UICorner")
     rowCorner.CornerRadius = UDim.new(0, 3)
-rowCorner.Parent = row
+    rowCorner.Parent = row
 
     registerThemeElement(row, "Card")
 
@@ -700,7 +794,7 @@ local function createSlider(tabFrame, name, minVal, maxVal, defaultVal, layoutOr
             active = false
         end
     end)
- 
+
     registerThemeElement(label, "Text")
     registerThemeElement(sliderBar, "Sidebar")
     registerThemeElement(sliderFill, "Accent")
@@ -756,6 +850,7 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     
     local knobCorner = Instance.new("UICorner")
     knobCorner.CornerRadius = UDim.new(1, 0)
+    knobKnobCorner = knobCorner -- local copy
     knobCorner.Parent = knob
     
     local enabled = defaultVal
@@ -940,7 +1035,7 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
         Color3.fromRGB(250, 120, 170), -- Pink
         Color3.fromRGB(150, 250, 80),  -- Lime
         Color3.fromRGB(0, 0, 0),       -- Black
-        Color3.fromRGB(150, 150, 155)  -- Grey
+        Color3.fromRGB(150, 150, 150)  -- Grey
     }
     
     local function selectColor(color, skipHexUpdate)
@@ -1228,7 +1323,7 @@ end))
 local themeRow = createRow(settingsTab, "ThemeRow", 45, 5)
 
 local themeLabel = Instance.new("TextLabel")
-themeLabel.Size = UDim2.new(1, -220, 1, 0)
+themeLabel.Size = UDim2.new(1, -280, 1, 0)
 themeLabel.Position = UDim2.new(0, 10, 0, 0)
 themeLabel.BackgroundTransparency = 1
 themeLabel.Text = "Menu Theme"
@@ -1239,27 +1334,31 @@ themeLabel.TextXAlignment = Enum.TextXAlignment.Left
 themeLabel.Parent = themeRow
 registerThemeElement(themeLabel, "Text")
 
-local themeContainer = Instance.new("Frame")
-themeContainer.Size = UDim2.new(0, 200, 0, 25)
-themeContainer.Position = UDim2.new(1, -210, 0.5, -12)
+local themeContainer = Instance.new("ScrollingFrame")
+themeContainer.Size = UDim2.new(0, 260, 0, 28)
+themeContainer.Position = UDim2.new(1, -270, 0.5, -14)
 themeContainer.BackgroundTransparency = 1
+themeContainer.BorderSizePixel = 0
+themeContainer.ScrollBarThickness = 2
+themeContainer.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 130)
+themeContainer.CanvasSize = UDim2.new(0, 8 * 52 + 10, 0, 0)
+themeContainer.ScrollingDirection = Enum.ScrollingDirection.X
 themeContainer.Parent = themeRow
 
 local themeLayout = Instance.new("UIListLayout")
 themeLayout.FillDirection = Enum.FillDirection.Horizontal
-themeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 themeLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 themeLayout.Padding = UDim.new(0, 4)
 themeLayout.Parent = themeContainer
 
-local themeNames = {"Dark", "Purple", "Aqua", "Sakura"}
+local themeNames = {"Dark", "Purple", "Aqua", "Sakura", "Cyberpunk", "Forest", "Nordic", "Sunset"}
 for _, name in ipairs(themeNames) do
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 45, 1, 0)
+    btn.Size = UDim2.new(0, 48, 0, 20)
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(220, 220, 225)
-    btn.TextSize = 10
+    btn.TextSize = 9
     btn.Font = Enum.Font.SourceSansBold
     btn.Parent = themeContainer
     
@@ -1537,7 +1636,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.6.0\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.7.0\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.SourceSansBold
@@ -1568,7 +1667,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.6.0:\n- Increased menu size to 600x420 for improved layout.\n- Fixed top stats island toggles (Show Island, FPS, Ping) for correct responsiveness.\n- Registered main frame background and all authors tab text in the theme system."
+changelogLabel.Text = "Changelog v1.7.0:\n- Added dynamic menu resizing by dragging the bottom-right corner.\n- Added 4 new beautiful themes (Cyberpunk, Forest, Nordic, Sunset).\n- Redesigned the theme selection row with a horizontal scrollbar."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.SourceSans
@@ -1865,6 +1964,8 @@ table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         updateMain(input)
     elseif input == islandDragInput and islandDragging then
         updateIsland(input)
+    elseif input == resizeDragInput and resizing then
+        updateResize(input)
     end
 end))
 
