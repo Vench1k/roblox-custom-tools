@@ -750,7 +750,7 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 16, 0, 16)
     knob.Position = defaultVal and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    knob.Knob.BackgroundColor3 = Color3.fromRGB(240, 240, 245)
+    knob.BackgroundColor3 = Color3.fromRGB(240, 240, 245)
     knob.BorderSizePixel = 0
     knob.Parent = toggleButton
     
@@ -940,7 +940,7 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
         Color3.fromRGB(250, 120, 170), -- Pink
         Color3.fromRGB(150, 250, 80),  -- Lime
         Color3.fromRGB(0, 0, 0),       -- Black
-        Color3.fromRGB(150, 150, 150)  -- Grey
+        Color3.fromRGB(150, 150, 155)  -- Grey
     }
     
     local function selectColor(color, skipHexUpdate)
