@@ -105,6 +105,9 @@ local islandVisible = true
 local fpsVisible = true
 local pingVisible = true
 local menuKeybind = Enum.KeyCode.P
+local islandFrame = nil
+local islandFPS = nil
+local islandPing = nil
 
 -- Visuals State variables
 local highlightEnabled = false
@@ -131,6 +134,127 @@ local boxTransparency = 0
 -- Connections list to disconnect on unload to prevent leaks
 local connections = {}
 
+-- Themes Configuration
+local currentTheme = "Dark"
+local themes = {
+    Dark = {
+        Background = Color3.fromRGB(30, 30, 35),
+        Header = Color3.fromRGB(40, 40, 45),
+        Accent = Color3.fromRGB(80, 80, 250),
+        Sidebar = Color3.fromRGB(35, 35, 40),
+        Card = Color3.fromRGB(45, 45, 50),
+        Text = Color3.fromRGB(240, 240, 245)
+    },
+    Purple = {
+        Background = Color3.fromRGB(25, 20, 35),
+        Header = Color3.fromRGB(35, 25, 50),
+        Accent = Color3.fromRGB(160, 80, 250),
+        Sidebar = Color3.fromRGB(30, 25, 40),
+        Card = Color3.fromRGB(40, 35, 55),
+        Text = Color3.fromRGB(245, 240, 250)
+    },
+    Aqua = {
+        Background = Color3.fromRGB(15, 25, 30),
+        Header = Color3.fromRGB(20, 35, 45),
+        Accent = Color3.fromRGB(0, 200, 200),
+        Sidebar = Color3.fromRGB(18, 30, 38),
+        Card = Color3.fromRGB(25, 45, 55),
+        Text = Color3.fromRGB(230, 245, 245)
+    },
+    Sakura = {
+        Background = Color3.fromRGB(35, 25, 30),
+        Header = Color3.fromRGB(45, 30, 40),
+        Accent = Color3.fromRGB(250, 100, 150),
+        Sidebar = Color3.fromRGB(40, 28, 35),
+        Card = Color3.fromRGB(55, 38, 48),
+        Text = Color3.fromRGB(255, 240, 245)
+    }
+}
+
+local themeElements = {
+    Background = {},
+    Header = {},
+    Accent = {},
+    Sidebar = {},
+    Card = {},
+    Text = {}
+}
+local toggleUpdaters = {}
+
+local function registerThemeElement(element, category)
+    if themeElements[category] then
+        table.insert(themeElements[category], element)
+    end
+    local colors = themes[currentTheme]
+    if not colors then return end
+    pcall(function()
+        if category == "Text" then
+            element.TextColor3 = colors.Text
+        elseif category == "Background" then
+            element.BackgroundColor3 = colors.Background
+        elseif category == "Header" then
+            element.BackgroundColor3 = colors.Header
+        elseif category == "Accent" then
+            if element:IsA("TextLabel") or element:IsA("TextBox") or element:IsA("TextButton") then
+                element.TextColor3 = colors.Accent
+            else
+                element.BackgroundColor3 = colors.Accent
+            end
+        elseif category == "Sidebar" then
+            element.BackgroundColor3 = colors.Sidebar
+        elseif category == "Card" then
+            element.BackgroundColor3 = colors.Card
+        end
+    end)
+end
+
+local function updateTabColors()
+    local colors = themes[currentTheme]
+    if not colors then return end
+    for name, data in pairs(tabs) do
+        if name == activeTabName then
+            data.Button.BackgroundColor3 = colors.Card
+        else
+            data.Button.BackgroundColor3 = colors.Sidebar
+        end
+        data.Button.TextColor3 = colors.Text
+    end
+    if settingsButton then
+        settingsButton.BackgroundColor3 = activeTabName == "Settings" and colors.Accent or colors.Header
+    end
+end
+
+local function applyTheme(themeName)
+    currentTheme = themeName
+    local colors = themes[themeName]
+    if not colors then return end
+    
+    for _, elem in ipairs(themeElements.Background) do
+        pcall(function() elem.BackgroundColor3 = colors.Background end)
+    end
+    for _, elem in ipairs(themeElements.Header) do
+        pcall(function() elem.BackgroundColor3 = colors.Header end)
+    end
+    for _, elem in ipairs(themeElements.Accent) do
+        pcall(function() elem.BackgroundColor3 = colors.Accent end)
+    end
+    for _, elem in ipairs(themeElements.Sidebar) do
+        pcall(function() elem.BackgroundColor3 = colors.Sidebar end)
+    end
+    for _, elem in ipairs(themeElements.Card) do
+        pcall(function() elem.BackgroundColor3 = colors.Card end)
+    end
+    for _, elem in ipairs(themeElements.Text) do
+        pcall(function() elem.TextColor3 = colors.Text end)
+    end
+    
+    for _, updater in ipairs(toggleUpdaters) do
+        pcall(updater)
+    end
+    
+    pcall(updateTabColors)
+end
+
 -- Create GUI Elements early to guarantee UI is loaded
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "BurLixGUI"
@@ -140,18 +264,109 @@ screenGui.Parent = targetParent
 -- Main Frame (Wider to accommodate left tab sidebar)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 460, 0, 320)
-mainFrame.Position = UDim2.new(0.5, -230, 0.5, -160)
+mainFrame.Size = UDim2.new(0, 600, 0, 420)
+mainFrame.Position = UDim2.new(0.5, -300, 0.5, -210)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
+registerThemeElement(mainFrame, "Background")
 
 -- UI Corner for Main Frame (Less rounded)
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 4)
 mainCorner.Parent = mainFrame
+
+local function toggleUI()
+    mainFrame.Visible = not mainFrame.Visible
+end
+
+-- ==================== TOP STATS ISLAND ====================
+
+islandFrame = Instance.new("Frame")
+islandFrame.Name = "IslandFrame"
+islandFrame.Size = UDim2.new(0, 380, 0, 35)
+islandFrame.Position = UDim2.new(0.5, -190, 0, 15)
+islandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+islandFrame.BorderSizePixel = 0
+islandFrame.Active = true
+islandFrame.Draggable = true
+islandFrame.Parent = screenGui
+registerThemeElement(islandFrame, "Sidebar")
+
+local islandCorner = Instance.new("UICorner")
+islandCorner.CornerRadius = UDim.new(0, 4)
+islandCorner.Parent = islandFrame
+
+local islandLayout = Instance.new("UIListLayout")
+islandLayout.FillDirection = Enum.FillDirection.Horizontal
+islandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+islandLayout.SortOrder = Enum.SortOrder.LayoutOrder
+islandLayout.Padding = UDim.new(0, 10)
+islandLayout.Parent = islandFrame
+
+local islandPadding = Instance.new("UIPadding")
+islandPadding.PaddingLeft = UDim.new(0, 10)
+islandPadding.PaddingRight = UDim.new(0, 10)
+islandPadding.Parent = islandFrame
+
+-- Helper function to create labels for the island
+local function createIslandLabel(text, sizeX, layoutOrder, isAccent)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, sizeX, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 225)
+    label.TextSize = 12
+    label.Font = Enum.Font.SourceSansBold
+    label.LayoutOrder = layoutOrder
+    label.Parent = islandFrame
+    registerThemeElement(label, isAccent and "Accent" or "Text")
+    return label
+end
+
+local islandTitle = createIslandLabel("BurLix HUB", 65, 1, true)
+
+-- Vertical Separator on Island
+local islandSeparator = Instance.new("Frame")
+islandSeparator.Name = "Separator"
+islandSeparator.Size = UDim2.new(0, 1, 0, 18)
+islandSeparator.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+islandSeparator.BorderSizePixel = 0
+islandSeparator.LayoutOrder = 2
+islandSeparator.Parent = islandFrame
+registerThemeElement(islandSeparator, "Header")
+
+local islandUser = createIslandLabel(player.DisplayName or player.Name or "Player", 80, 3)
+islandUser.TextTruncate = Enum.TextTruncate.AtEnd
+
+islandFPS = createIslandLabel("FPS: --", 50, 4)
+islandPing = createIslandLabel("Ping: --", 60, 5)
+
+-- Set initial visibility from state
+islandFrame.Visible = islandVisible
+islandFPS.Visible = fpsVisible
+islandPing.Visible = pingVisible
+
+-- Toggle Button on Island
+local islandToggle = Instance.new("TextButton")
+islandToggle.Size = UDim2.new(0, 60, 0, 25)
+islandToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+islandToggle.Text = "Toggle"
+islandToggle.TextColor3 = Color3.fromRGB(240, 240, 245)
+islandToggle.TextSize = 11
+islandToggle.Font = Enum.Font.SourceSansBold
+islandToggle.LayoutOrder = 6
+islandToggle.Parent = islandFrame
+registerThemeElement(islandToggle, "Card")
+registerThemeElement(islandToggle, "Text")
+
+local toggleCornerBtn = Instance.new("UICorner")
+toggleCornerBtn.CornerRadius = UDim.new(0, 3)
+toggleCornerBtn.Parent = islandToggle
+
+table.insert(connections, islandToggle.MouseButton1Click:Connect(toggleUI))
 
 -- Title Bar
 local titleBar = Instance.new("Frame")
@@ -160,6 +375,7 @@ titleBar.Size = UDim2.new(1, 0, 0, 45)
 titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
+registerThemeElement(titleBar, "Header")
 
 local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 4)
@@ -171,12 +387,13 @@ titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "BurLix HUB v1.5.0"
+titleText.Text = "BurLix HUB v1.6.0"
 titleText.TextColor3 = Color3.fromRGB(240, 240, 245)
 titleText.TextSize = 18
 titleText.Font = Enum.Font.SourceSansBold
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
+registerThemeElement(titleText, "Text")
 
 -- Title Bar Separator Line
 local titleSeparator = Instance.new("Frame")
@@ -186,6 +403,7 @@ titleSeparator.Position = UDim2.new(0, 0, 0, 44)
 titleSeparator.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
 titleSeparator.BorderSizePixel = 0
 titleSeparator.Parent = titleBar
+registerThemeElement(titleSeparator, "Header")
 
 -- Settings Button (⚙) to open menu settings
 local settingsButton = Instance.new("TextButton")
@@ -198,6 +416,7 @@ settingsButton.TextColor3 = Color3.fromRGB(240, 240, 245)
 settingsButton.TextSize = 14
 settingsButton.Font = Enum.Font.SourceSansBold
 settingsButton.Parent = titleBar
+registerThemeElement(settingsButton, "Header")
 
 local settingsCorner = Instance.new("UICorner")
 settingsCorner.CornerRadius = UDim.new(0, 3)
@@ -206,12 +425,19 @@ settingsCorner.Parent = settingsButton
 -- Settings Button Hover Styles
 settingsButton.MouseEnter:Connect(function()
     if activeTabName ~= "Settings" then
-        TweenService:Create(settingsButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(70, 70, 75)}):Play()
+        local colors = themes[currentTheme]
+        local hoverColor = colors and Color3.fromRGB(
+            math.clamp(colors.Header.R * 255 + 20, 0, 255),
+            math.clamp(colors.Header.G * 255 + 20, 0, 255),
+            math.clamp(colors.Header.B * 255 + 20, 0, 255)
+        ) or Color3.fromRGB(70, 70, 75)
+        TweenService:Create(settingsButton, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
     end
 end)
 settingsButton.MouseLeave:Connect(function()
     if activeTabName ~= "Settings" then
-        TweenService:Create(settingsButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 55)}):Play()
+        local colors = themes[currentTheme]
+        TweenService:Create(settingsButton, TweenInfo.new(0.2), {BackgroundColor3 = colors and colors.Header or Color3.fromRGB(50, 50, 55)}):Play()
     end
 end)
 
@@ -226,6 +452,7 @@ closeButton.TextColor3 = Color3.fromRGB(240, 240, 245)
 closeButton.TextSize = 12
 closeButton.Font = Enum.Font.SourceSansBold
 closeButton.Parent = titleBar
+registerThemeElement(closeButton, "Header")
 
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 3)
@@ -238,7 +465,8 @@ closeButton.MouseEnter:Connect(function()
     closeButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 end)
 closeButton.MouseLeave:Connect(function()
-    closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    local colors = themes[currentTheme]
+    closeButton.BackgroundColor3 = colors and colors.Header or Color3.fromRGB(50, 50, 55)
 end)
 
 -- Navigation Panel (Sidebar)
@@ -249,6 +477,7 @@ navPanel.Position = UDim2.new(0, 0, 0, 45)
 navPanel.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 navPanel.BorderSizePixel = 0
 navPanel.Parent = mainFrame
+registerThemeElement(navPanel, "Sidebar")
 
 local navCorner = Instance.new("UICorner")
 navCorner.CornerRadius = UDim.new(0, 4)
@@ -286,23 +515,13 @@ local function showTab(tabName)
     
     for name, data in pairs(tabs) do
         if name == tabName then
-            TweenService:Create(data.Button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-            }):Play()
             data.Frame.Visible = true
         else
-            TweenService:Create(data.Button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-            }):Play()
             data.Frame.Visible = false
         end
     end
     
-    -- Highlight settings button if Settings tab is active
-    if settingsButton then
-        local targetColor = tabName == "Settings" and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(50, 50, 55)
-        TweenService:Create(settingsButton, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
-    end
+    pcall(updateTabColors)
 end
 
 local function createTab(name, layoutOrder, canvasHeight)
@@ -326,18 +545,21 @@ local function createTab(name, layoutOrder, canvasHeight)
 
     -- Hover effect for tab button (only if visible)
     if name ~= "Settings" then
-        local normalColor = Color3.fromRGB(45, 45, 50)
-        local hoverColor = Color3.fromRGB(52, 52, 58)
-        local activeColor = Color3.fromRGB(60, 60, 70)
-        
         btn.MouseEnter:Connect(function()
-            if btn.BackgroundColor3 ~= activeColor then
+            local colors = themes[currentTheme]
+            if colors and btn.BackgroundColor3 ~= colors.Card then
+                local hoverColor = Color3.fromRGB(
+                    math.clamp(colors.Sidebar.R * 255 + 10, 0, 255),
+                    math.clamp(colors.Sidebar.G * 255 + 10, 0, 255),
+                    math.clamp(colors.Sidebar.B * 255 + 10, 0, 255)
+                )
                 TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
             end
         end)
         btn.MouseLeave:Connect(function()
-            if btn.BackgroundColor3 ~= activeColor then
-                TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = normalColor}):Play()
+            local colors = themes[currentTheme]
+            if colors and btn.BackgroundColor3 ~= colors.Card then
+                TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = colors.Sidebar}):Play()
             end
         end)
     end
@@ -366,6 +588,8 @@ local function createTab(name, layoutOrder, canvasHeight)
         showTab(name)
     end)
 
+    registerThemeElement(btn, "Text")
+
     return frame
 end
 
@@ -381,7 +605,9 @@ local function createRow(tabFrame, name, height, layoutOrder)
 
     local rowCorner = Instance.new("UICorner")
     rowCorner.CornerRadius = UDim.new(0, 3)
-    rowCorner.Parent = row
+rowCorner.Parent = row
+
+    registerThemeElement(row, "Card")
 
     return row
 end
@@ -474,6 +700,10 @@ local function createSlider(tabFrame, name, minVal, maxVal, defaultVal, layoutOr
             active = false
         end
     end)
+ 
+    registerThemeElement(label, "Text")
+    registerThemeElement(sliderBar, "Sidebar")
+    registerThemeElement(sliderFill, "Accent")
 
     return row, updateSlider
 end
@@ -510,7 +740,6 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     local toggleButton = Instance.new("Frame")
     toggleButton.Size = UDim2.new(0, 40, 0, 20)
     toggleButton.Position = UDim2.new(1, -50, 0.5, -10)
-    toggleButton.BackgroundColor3 = defaultVal and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(35, 35, 40)
     toggleButton.BorderSizePixel = 0
     toggleButton.Parent = row
     
@@ -521,7 +750,7 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 16, 0, 16)
     knob.Position = defaultVal and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    knob.BackgroundColor3 = Color3.fromRGB(240, 240, 245)
+    knob.Knob.BackgroundColor3 = Color3.fromRGB(240, 240, 245)
     knob.BorderSizePixel = 0
     knob.Parent = toggleButton
     
@@ -531,10 +760,21 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     
     local enabled = defaultVal
     
+    local function updateToggleColor()
+        local colors = themes[currentTheme]
+        if colors then
+            toggleButton.BackgroundColor3 = enabled and colors.Accent or colors.Sidebar
+        end
+    end
+    
+    table.insert(toggleUpdaters, updateToggleColor)
+    updateToggleColor()
+    
     -- Click logic for the entire row (MouseButton1Click for toggle)
     table.insert(connections, row.MouseButton1Click:Connect(function()
         enabled = not enabled
-        local targetColor = enabled and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(35, 35, 40)
+        local colors = themes[currentTheme]
+        local targetColor = colors and (enabled and colors.Accent or colors.Sidebar) or (enabled and Color3.fromRGB(80, 80, 250) or Color3.fromRGB(35, 35, 40))
         local targetPos = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
         
         TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
@@ -544,15 +784,23 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
     end))
     
     -- Hover effect for the entire row (darken slightly on hover)
-    local normalColor = Color3.fromRGB(45, 45, 50)
-    local hoverColor = Color3.fromRGB(38, 38, 43)
-    
     table.insert(connections, row.MouseEnter:Connect(function()
-        TweenService:Create(row, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
+        local colors = themes[currentTheme]
+        if colors then
+            local hoverColor = Color3.fromRGB(
+                math.clamp(colors.Card.R * 255 - 7, 0, 255),
+                math.clamp(colors.Card.G * 255 - 7, 0, 255),
+                math.clamp(colors.Card.B * 255 - 7, 0, 255)
+            )
+            TweenService:Create(row, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
+        end
     end))
     
     table.insert(connections, row.MouseLeave:Connect(function()
-        TweenService:Create(row, TweenInfo.new(0.2), {BackgroundColor3 = normalColor}):Play()
+        local colors = themes[currentTheme]
+        if colors then
+            TweenService:Create(row, TweenInfo.new(0.2), {BackgroundColor3 = colors.Card}):Play()
+        end
     end))
     
     -- Right click logic for the entire row (MouseButton2Click to open settings)
@@ -562,6 +810,8 @@ local function createToggle(tabFrame, name, defaultVal, layoutOrder, onChange, o
         end))
     end
     
+    registerThemeElement(row, "Card")
+    registerThemeElement(label, "Text")
     return row
 end
 
@@ -605,6 +855,7 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
     panel.Visible = false
     panel.ClipsDescendants = true -- Crucial for smooth size animation
     panel.Parent = tabFrame
+    registerThemeElement(panel, "Sidebar")
     
     local panelCorner = Instance.new("UICorner")
     panelCorner.CornerRadius = UDim.new(0, 3)
@@ -638,6 +889,7 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
     colorLabel.Font = Enum.Font.SourceSansBold
     colorLabel.TextXAlignment = Enum.TextXAlignment.Left
     colorLabel.Parent = colorRow
+    registerThemeElement(colorLabel, "Text")
     
     -- HEX TextBox
     local hexInput = Instance.new("TextBox")
@@ -651,6 +903,8 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
     hexInput.Font = Enum.Font.Code
     hexInput.ClearTextOnFocus = false
     hexInput.Parent = colorRow
+    registerThemeElement(hexInput, "Background")
+    registerThemeElement(hexInput, "Text")
     
     local hexCorner = Instance.new("UICorner")
     hexCorner.CornerRadius = UDim.new(0, 2)
@@ -763,6 +1017,7 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
         label.Font = Enum.Font.SourceSansBold
         label.TextXAlignment = Enum.TextXAlignment.Left
         label.Parent = sliderRow
+        registerThemeElement(label, "Text")
         
         local sliderBar = Instance.new("Frame")
         sliderBar.Size = UDim2.new(1, -95, 0, 4)
@@ -770,6 +1025,7 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
         sliderBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
         sliderBar.BorderSizePixel = 0
         sliderBar.Parent = sliderRow
+        registerThemeElement(sliderBar, "Sidebar")
         
         local sliderBarCorner = Instance.new("UICorner")
         sliderBarCorner.CornerRadius = UDim.new(0, 2)
@@ -780,6 +1036,7 @@ local function createSettingsPanel(tabFrame, layoutOrder, defaultColor, onColorC
         sliderFill.BackgroundColor3 = Color3.fromRGB(80, 80, 250)
         sliderFill.BorderSizePixel = 0
         sliderFill.Parent = sliderBar
+        registerThemeElement(sliderFill, "Accent")
         
         local sliderFillCorner = Instance.new("UICorner")
         sliderFillCorner.CornerRadius = UDim.new(0, 2)
@@ -864,7 +1121,7 @@ local playerTab = createTab("Player", 1, 200)
 local worldTab = createTab("World", 2, 200)
 local authorsTab = createTab("Authors", 3, 520)
 local visualsTab = createTab("Visuals", 4, 850)
-local settingsTab = createTab("Settings", 5, 300)
+local settingsTab = createTab("Settings", 5, 350)
 
 -- Settings Tab Content
 local settingsTitle = Instance.new("TextLabel")
@@ -879,6 +1136,7 @@ settingsTitle.Font = Enum.Font.SourceSansBold
 settingsTitle.TextXAlignment = Enum.TextXAlignment.Left
 settingsTitle.LayoutOrder = 0
 settingsTitle.Parent = settingsTab
+registerThemeElement(settingsTitle, "Text")
 
 local islandVisibleToggle = createToggle(settingsTab, "Show Top Island", true, 1, function(state)
     islandVisible = state
@@ -914,6 +1172,7 @@ keybindLabel.TextSize = 14
 keybindLabel.Font = Enum.Font.SourceSansBold
 keybindLabel.TextXAlignment = Enum.TextXAlignment.Left
 keybindLabel.Parent = keybindRow
+registerThemeElement(keybindLabel, "Text")
 
 local keybindInput = Instance.new("TextBox")
 keybindInput.Size = UDim2.new(0, 80, 0, 25)
@@ -926,6 +1185,8 @@ keybindInput.TextSize = 12
 keybindInput.Font = Enum.Font.Code
 keybindInput.ClearTextOnFocus = false
 keybindInput.Parent = keybindRow
+registerThemeElement(keybindInput, "Background")
+registerThemeElement(keybindInput, "Text")
 
 local keybindCorner = Instance.new("UICorner")
 keybindCorner.CornerRadius = UDim.new(0, 3)
@@ -962,6 +1223,69 @@ table.insert(connections, keybindInput.FocusLost:Connect(function(enterPressed)
         keybindStroke.Color = Color3.fromRGB(55, 55, 60)
     end)
 end))
+
+-- Theme Selector Row
+local themeRow = createRow(settingsTab, "ThemeRow", 45, 5)
+
+local themeLabel = Instance.new("TextLabel")
+themeLabel.Size = UDim2.new(1, -220, 1, 0)
+themeLabel.Position = UDim2.new(0, 10, 0, 0)
+themeLabel.BackgroundTransparency = 1
+themeLabel.Text = "Menu Theme"
+themeLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
+themeLabel.TextSize = 14
+themeLabel.Font = Enum.Font.SourceSansBold
+themeLabel.TextXAlignment = Enum.TextXAlignment.Left
+themeLabel.Parent = themeRow
+registerThemeElement(themeLabel, "Text")
+
+local themeContainer = Instance.new("Frame")
+themeContainer.Size = UDim2.new(0, 200, 0, 25)
+themeContainer.Position = UDim2.new(1, -210, 0.5, -12)
+themeContainer.BackgroundTransparency = 1
+themeContainer.Parent = themeRow
+
+local themeLayout = Instance.new("UIListLayout")
+themeLayout.FillDirection = Enum.FillDirection.Horizontal
+themeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+themeLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+themeLayout.Padding = UDim.new(0, 4)
+themeLayout.Parent = themeContainer
+
+local themeNames = {"Dark", "Purple", "Aqua", "Sakura"}
+for _, name in ipairs(themeNames) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 45, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(220, 220, 225)
+    btn.TextSize = 10
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Parent = themeContainer
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 3)
+    btnCorner.Parent = btn
+    
+    local function updateBtnStyle()
+        local colors = themes[currentTheme]
+        if currentTheme == name then
+            btn.BackgroundColor3 = colors.Accent
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            btn.BackgroundColor3 = colors.Sidebar
+            btn.TextColor3 = colors.Text
+        end
+    end
+    
+    table.insert(toggleUpdaters, updateBtnStyle)
+    
+    table.insert(connections, btn.MouseButton1Click:Connect(function()
+        applyTheme(name)
+    end))
+    
+    updateBtnStyle()
+end
 
 -- DEFAULT TAB SETTINGS
 showTab("Player")
@@ -1213,7 +1537,7 @@ local creatorsLabel = Instance.new("TextLabel")
 creatorsLabel.Size = UDim2.new(1, -20, 0, 75)
 creatorsLabel.Position = UDim2.new(0, 10, 0, 5)
 creatorsLabel.BackgroundTransparency = 1
-creatorsLabel.Text = "BurLix HUB v1.5.0\n\nCreators:\n- Vench1k\n- Gemini"
+creatorsLabel.Text = "BurLix HUB v1.6.0\n\nCreators:\n- Vench1k\n- Gemini"
 creatorsLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
 creatorsLabel.TextSize = 13
 creatorsLabel.Font = Enum.Font.SourceSansBold
@@ -1222,6 +1546,7 @@ creatorsLabel.TextYAlignment = Enum.TextYAlignment.Top
 creatorsLabel.LineHeight = 1.3
 creatorsLabel.TextWrapped = true
 creatorsLabel.Parent = creatorsCard
+registerThemeElement(creatorsLabel, "Text")
 
 local thankYouLabel = Instance.new("TextLabel")
 thankYouLabel.Size = UDim2.new(1, -20, 0, 20)
@@ -1234,6 +1559,7 @@ thankYouLabel.Font = Enum.Font.SourceSans
 thankYouLabel.TextXAlignment = Enum.TextXAlignment.Left
 thankYouLabel.TextWrapped = true
 thankYouLabel.Parent = creatorsCard
+registerThemeElement(thankYouLabel, "Text")
 
 -- Changelog Card (Taller to comfortably fit wrapped version history text)
 local changelogCard = createRow(authorsTab, "ChangelogCard", 195, 2)
@@ -1242,7 +1568,7 @@ local changelogLabel = Instance.new("TextLabel")
 changelogLabel.Size = UDim2.new(1, -20, 1, -10)
 changelogLabel.Position = UDim2.new(0, 10, 0, 5)
 changelogLabel.BackgroundTransparency = 1
-changelogLabel.Text = "Changelog v1.5.0:\n- Moved settings into a dedicated, clean Settings Tab.\n- Added Show Top Island, Show FPS, Show Ping, and customizable Menu Keybind settings."
+changelogLabel.Text = "Changelog v1.6.0:\n- Increased menu size to 600x420 for improved layout.\n- Fixed top stats island toggles (Show Island, FPS, Ping) for correct responsiveness.\n- Registered main frame background and all authors tab text in the theme system."
 changelogLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 changelogLabel.TextSize = 12
 changelogLabel.Font = Enum.Font.SourceSans
@@ -1251,6 +1577,7 @@ changelogLabel.TextYAlignment = Enum.TextYAlignment.Top
 changelogLabel.LineHeight = 1.3
 changelogLabel.TextWrapped = true
 changelogLabel.Parent = changelogCard
+registerThemeElement(changelogLabel, "Text")
 
 -- User Info Card
 local infoRow = createRow(authorsTab, "InfoRow", 100, 3)
@@ -1271,12 +1598,12 @@ infoLabel.Text = string.format("User: %s\nDisplay: %s\nAccount Age: %s days\nPla
 infoLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 infoLabel.TextSize = 13
 infoLabel.Font = Enum.Font.SourceSans
-
 infoLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoLabel.TextYAlignment = Enum.TextYAlignment.Top
 infoLabel.LineHeight = 1.3
 infoLabel.TextWrapped = true
 infoLabel.Parent = infoRow
+registerThemeElement(infoLabel, "Text")
 
 
 -- ==================== VISUALS TAB CONTENTS ====================
@@ -1416,89 +1743,7 @@ end, {
 })
 
 
--- ==================== TOP STATS ISLAND ====================
-
-local islandFrame = Instance.new("Frame")
-islandFrame.Name = "IslandFrame"
-islandFrame.Size = UDim2.new(0, 380, 0, 35)
-islandFrame.Position = UDim2.new(0.5, -190, 0, 15)
-islandFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-islandFrame.BorderSizePixel = 0
-islandFrame.Active = true
-islandFrame.Draggable = true
-islandFrame.Parent = screenGui
-
-local islandCorner = Instance.new("UICorner")
-islandCorner.CornerRadius = UDim.new(0, 4)
-islandCorner.Parent = islandFrame
-
-local islandLayout = Instance.new("UIListLayout")
-islandLayout.FillDirection = Enum.FillDirection.Horizontal
-islandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-islandLayout.SortOrder = Enum.SortOrder.LayoutOrder
-islandLayout.Padding = UDim.new(0, 10)
-islandLayout.Parent = islandFrame
-
-local islandPadding = Instance.new("UIPadding")
-islandPadding.PaddingLeft = UDim.new(0, 10)
-islandPadding.PaddingRight = UDim.new(0, 10)
-islandPadding.Parent = islandFrame
-
--- Helper function to create labels for the island
-local function createIslandLabel(text, sizeX, layoutOrder)
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, sizeX, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(220, 220, 225)
-    label.TextSize = 12
-    label.Font = Enum.Font.SourceSansBold
-    label.LayoutOrder = layoutOrder
-    label.Parent = islandFrame
-    return label
-end
-
-local islandTitle = createIslandLabel("BurLix HUB", 65, 1)
-islandTitle.TextColor3 = Color3.fromRGB(80, 80, 250)
-
--- Vertical Separator on Island
-local islandSeparator = Instance.new("Frame")
-islandSeparator.Name = "Separator"
-islandSeparator.Size = UDim2.new(0, 1, 0, 18)
-islandSeparator.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
-islandSeparator.BorderSizePixel = 0
-islandSeparator.LayoutOrder = 2
-islandSeparator.Parent = islandFrame
-
-local islandUser = createIslandLabel(player.DisplayName or player.Name or "Player", 80, 3)
-islandUser.TextTruncate = Enum.TextTruncate.AtEnd
-
-local islandFPS = createIslandLabel("FPS: --", 50, 4)
-local islandPing = createIslandLabel("Ping: --", 60, 5)
-
--- Toggle Button on Island
-local islandToggle = Instance.new("TextButton")
-islandToggle.Size = UDim2.new(0, 60, 0, 25)
-islandToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-islandToggle.Text = "Toggle"
-islandToggle.TextColor3 = Color3.fromRGB(240, 240, 245)
-islandToggle.TextSize = 11
-islandToggle.Font = Enum.Font.SourceSansBold
-islandToggle.LayoutOrder = 6
-islandToggle.Parent = islandFrame
-
-local toggleCornerBtn = Instance.new("UICorner")
-toggleCornerBtn.CornerRadius = UDim.new(0, 3)
-toggleCornerBtn.Parent = islandToggle
-
-
 -- ==================== LOGIC AND INTERACTION ====================
-
-local function toggleUI()
-    mainFrame.Visible = not mainFrame.Visible
-end
-
-table.insert(connections, islandToggle.MouseButton1Click:Connect(toggleUI))
 
 -- Completely unload the script / destroy GUI on Close Button click (With active connections & visuals cleanup)
 local unloaded = false
